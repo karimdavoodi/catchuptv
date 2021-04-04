@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: gb_config
+  name: gb-config
 data:
-  gb_mq_addr: ""
-  gb_mq_user: "karim"      # TODO: move to Secret
-  gb_mq_pass: "31233123"
+  gb-mq-name: gb-mq
+  gb-mq-user: "karim"      # TODO: move to Secret
+  gb-mq-pass: "31233123"
   # file-like keys
-  fs_segment.nginx.config: |
+  fs-segment.nginx.config: |
     server {
 
     }

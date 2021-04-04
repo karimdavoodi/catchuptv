@@ -2,14 +2,6 @@ FROM ubuntu:20.04
 LABEL version="1.0"
 LABEL type="chan_net_to_epg"
 
-ENV EPG_SOURCE_URL="udp://224.2.2.2:2000"
-ENV EPG_SOURCE_TYPE="dvb"
-ENV MQ_HOST="192.168.1.23"
-ENV MQ_USER="karim"
-ENV MQ_PASS="31233123"
-ENV MQ_EPG_EXCHANGE="epg"
-
-
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libboost-log1.71.0              \
     libboost-chrono1.71.0           \
