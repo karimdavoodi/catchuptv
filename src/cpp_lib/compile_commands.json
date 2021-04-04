@@ -1,0 +1,22 @@
+[
+{
+  "directory": "/opt/catchuptv/src/cpp_lib",
+  "command": "/usr/bin/c++  -DBOOST_ALL_NO_LIB -DBOOST_ATOMIC_DYN_LINK -DBOOST_CHRONO_DYN_LINK -DBOOST_DATE_TIME_DYN_LINK -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_LOG_DYN_LINK -DBOOST_LOG_DYN_LINK=1 -DBOOST_LOG_SETUP_DYN_LINK -DBOOST_REGEX_DYN_LINK -DBOOST_SYSTEM_DYN_LINK -DBOOST_THREAD_DYN_LINK -DGST_USE_UNSTABLE_API=1 -I/usr/include/gstreamer-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include    -fdiagnostics-show-location=every-line -Wall -std=gnu++17 -o CMakeFiles/testlib.dir/src/main.cpp.o -c /opt/catchuptv/src/cpp_lib/src/main.cpp",
+  "file": "/opt/catchuptv/src/cpp_lib/src/main.cpp"
+},
+{
+  "directory": "/opt/catchuptv/src/cpp_lib",
+  "command": "/usr/bin/c++  -DBOOST_ALL_NO_LIB -DBOOST_ATOMIC_DYN_LINK -DBOOST_CHRONO_DYN_LINK -DBOOST_DATE_TIME_DYN_LINK -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_LOG_DYN_LINK -DBOOST_LOG_DYN_LINK=1 -DBOOST_LOG_SETUP_DYN_LINK -DBOOST_REGEX_DYN_LINK -DBOOST_SYSTEM_DYN_LINK -DBOOST_THREAD_DYN_LINK -DGST_USE_UNSTABLE_API=1 -I/usr/include/gstreamer-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include    -fdiagnostics-show-location=every-line -Wall -std=gnu++17 -o CMakeFiles/utils.dir/src/utils.cpp.o -c /opt/catchuptv/src/cpp_lib/src/utils.cpp",
+  "file": "/opt/catchuptv/src/cpp_lib/src/utils.cpp"
+},
+{
+  "directory": "/opt/catchuptv/src/cpp_lib",
+  "command": "/usr/bin/c++  -DBOOST_ALL_NO_LIB -DBOOST_ATOMIC_DYN_LINK -DBOOST_CHRONO_DYN_LINK -DBOOST_DATE_TIME_DYN_LINK -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_LOG_DYN_LINK -DBOOST_LOG_DYN_LINK=1 -DBOOST_LOG_SETUP_DYN_LINK -DBOOST_REGEX_DYN_LINK -DBOOST_SYSTEM_DYN_LINK -DBOOST_THREAD_DYN_LINK -DGST_USE_UNSTABLE_API=1 -I/usr/include/gstreamer-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include    -fdiagnostics-show-location=every-line -Wall -std=gnu++17 -o CMakeFiles/utils.dir/src/gst.cpp.o -c /opt/catchuptv/src/cpp_lib/src/gst.cpp",
+  "file": "/opt/catchuptv/src/cpp_lib/src/gst.cpp"
+},
+{
+  "directory": "/opt/catchuptv/src/cpp_lib",
+  "command": "/usr/bin/c++  -DBOOST_ALL_NO_LIB -DBOOST_ATOMIC_DYN_LINK -DBOOST_CHRONO_DYN_LINK -DBOOST_DATE_TIME_DYN_LINK -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_LOG_DYN_LINK -DBOOST_LOG_DYN_LINK=1 -DBOOST_LOG_SETUP_DYN_LINK -DBOOST_REGEX_DYN_LINK -DBOOST_SYSTEM_DYN_LINK -DBOOST_THREAD_DYN_LINK -DGST_USE_UNSTABLE_API=1 -I/usr/include/gstreamer-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include    -fdiagnostics-show-location=every-line -Wall -std=gnu++17 -o CMakeFiles/utils.dir/src/mq.cpp.o -c /opt/catchuptv/src/cpp_lib/src/mq.cpp",
+  "file": "/opt/catchuptv/src/cpp_lib/src/mq.cpp"
+}
+]
