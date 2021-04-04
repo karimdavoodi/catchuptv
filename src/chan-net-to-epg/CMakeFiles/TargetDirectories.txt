@@ -1,0 +1,4 @@
+/opt/catchuptv/src/chan-net-to-epg/CMakeFiles/rebuild_cache.dir
+/opt/catchuptv/src/chan-net-to-epg/CMakeFiles/edit_cache.dir
+/opt/catchuptv/src/chan-net-to-epg/CMakeFiles/copy.dir
+/opt/catchuptv/src/chan-net-to-epg/CMakeFiles/chan_net_to_epg.dir

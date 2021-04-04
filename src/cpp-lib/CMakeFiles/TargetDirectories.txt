@@ -1,0 +1,3 @@
+/opt/catchuptv/src/cpp-lib/CMakeFiles/rebuild_cache.dir
+/opt/catchuptv/src/cpp-lib/CMakeFiles/edit_cache.dir
+/opt/catchuptv/src/cpp-lib/CMakeFiles/utils.dir
