@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chan-net-to-epg-deployment
+spec:
+  selector:
+    matchLabels:
+      app: chan-net-to-epg
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: chan-net-to-epg
+    spec:
+      containers:
+        - name: chan-net-to-epg
+          image: localhost:32000/chan-net-to-epg:registry
+          env:
+            - name: RABBITMQ_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: gb-config
+                  key: chan-net-to-epg-user
+            - name: RABBITMQ_PASS
+              valueFrom:
+                configMapKeyRef:
+                  name: gb-config
+                  key: chan-net-to-epg-pass
