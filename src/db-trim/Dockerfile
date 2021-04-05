@@ -2,12 +2,7 @@ FROM ubuntu:20.04
 LABEL version="1.0"
 LABEL type="db_trim"
 
-#TODO: MUST set in YAML file
-ENV DB_HOST="localhost"
-ENV DB_DATABASE="trim"
-ENV DB_USER="postgres"
-ENV DB_PASS="31233123"
-# docker run -it  -p '3000:3000' \   // for postrest listening
+# docker run -it  -p '80:80' \   // for postrest listening
 #       -v /home/temp/containers/progresSqlData:/data \
 #       db_trim 
 

@@ -3,9 +3,16 @@ kind: ConfigMap
 metadata:
   name: gb-config
 data:
-  gb-mq-name: gb-mq
-  gb-mq-user: "karim"      # TODO: move to Secret
+  gb-mq-host: "gb-mq"
+  # TODO: move to Secret
+  gb-mq-user: "karim"
   gb-mq-pass: "31233123"
+  gb-mq-epg-queue: "epg"
+  gb-mq-seg-info-queue: "seg-info"
+  gb-mq-seg-data-queue: "seg-data"
+  # TODO: For each EPG pod ...
+  epg-source-type: "dvb"
+  epg-source-url: "udp://224.2.2.2:2000"
   # file-like keys
   fs-segment.nginx.config: |
     server {

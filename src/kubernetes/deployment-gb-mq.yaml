@@ -32,12 +32,12 @@ spec:
           ports:
             - containerPort: 5762
           env:
-            - name: RABBITMQ_USER
+            - name: GB_MQ_USER
               valueFrom:
                 configMapKeyRef:
                   name: gb-config
                   key: gb-mq-user
-            - name: RABBITMQ_PASS
+            - name: GB_MQ_PASS
               valueFrom:
                 configMapKeyRef:
                   name: gb-config

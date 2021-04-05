@@ -1,20 +1,36 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-epg
+  labels:
+    app: db-epg
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: db-epg
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: chan-net-to-epg-deployment
+  name: db-epg-deployment
 spec:
   selector:
     matchLabels:
-      app: chan-net-to-epg
+      app: db-epg
   replicas: 1
   template:
     metadata:
       labels:
-        app: chan-net-to-epg
+        app: db-epg
     spec:
       containers:
-        - name: chan-net-to-epg
-          image: localhost:32000/chan-net-to-epg:registry
+        - name: db-epg
+          image: localhost:32000/db-epg:registry
+          ports:
+            - containerPort: 3000
           env:
             - name: GB_MQ_HOST
               valueFrom:
@@ -36,13 +52,3 @@ spec:
                 configMapKeyRef:
                   name: gb-config
                   key: gb-mq-epg-queue
-            - name: EPG_SOURCE_TYPE
-              valueFrom:
-                configMapKeyRef:
-                  name: gb-config
-                  key: epg-source-type
-            - name: EPG_SOURCE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: gb-config
-                  key: epg-source-url

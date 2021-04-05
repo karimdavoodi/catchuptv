@@ -14,10 +14,10 @@ using namespace std;
 void udp_to_epg(const char* mpts_url, MqProducer& mq);
 /*
  * ENV vars:
- *  - MQ_HOST : ip of RabbitMQ
- *  - MQ_USER : user
- *  - MQ_PASS : pass
- *  - MQ_EPG_EXCHANGE : epg exchange
+ *  - GB_MQ_HOST : ip of RabbitMQ
+ *  - GB_MQ_USER : user
+ *  - GB_MQ_PASS : pass
+ *  - GB_MQ_EPG_QUEUE : epg queue
  *  - EPG_SOURCE_TYPE: 'dvb', 'xml', ''
  *  - EPG_SOURCE_URL: url of mpts
  *
@@ -29,21 +29,21 @@ int main(int argc, char *argv[])
     Util::init();
     gst_mpegts_initialize();                                                                                   
 
-    const char* mq_host  = getenv("MQ_HOST");
-    const char* mq_user  = getenv("MQ_USER");
-    const char* mq_pass  = getenv("MQ_PASS");
-    const char* mq_epg_exchange  = getenv("MQ_EPG_EXCHANGE");
+    const char* mq_host  = getenv("GB_MQ_HOST");
+    const char* mq_user  = getenv("GB_MQ_USER");
+    const char* mq_pass  = getenv("GB_MQ_PASS");
+    const char* mq_epg_queue  = getenv("GB_MQ_EPG_QUEUE");
     const char* epg_source_type = getenv("EPG_SOURCE_TYPE");
     const char* epg_source_url = getenv("EPG_SOURCE_URL");
 
     if(!mq_host || !epg_source_url || 
             !mq_user || !mq_pass || 
-            !epg_source_type || !mq_epg_exchange){
+            !epg_source_type || !mq_epg_queue){
         LOG(error) << "Please set environment vars:" 
-                   << "MQ_HOST, MQ_EPG_EXCHANGE, EPG_SOURCE_TYPE, EPG_SOURCE_TYPE\n";
+                   << "GB_MQ_HOST, GB_MQ_EPG_QUEUE, EPG_SOURCE_TYPE, EPG_SOURCE_TYPE\n";
         return EXIT_FAILURE;
     }
-    MqProducer mq(mq_epg_exchange, mq_host, 5672, mq_user, mq_pass);        
+    MqProducer mq(mq_epg_queue, mq_host, 5672, mq_user, mq_pass);        
     if(!strcmp(epg_source_type, "dvb")){
         while(true){
             udp_to_epg(epg_source_url, mq);
