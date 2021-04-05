@@ -41,7 +41,7 @@ def start():
     connection = pika.BlockingConnection(parameters)
     channel = connection.channel()
 
-    channel.queue_declare(queue=gb_env['GB_MQ_QUEUE'], durable=True)
+    channel.queue_declare(queue=gb_env['GB_MQ_EPG_QUEUE'], durable=True)
 
     def callback(ch, method, properties, body):
         global db_cur
@@ -69,7 +69,7 @@ def start():
 
 
     channel.basic_qos(prefetch_count=1)
-    channel.basic_consume(queue=gb_env['GB_MQ_QUEUE'], on_message_callback=callback)
+    channel.basic_consume(queue=gb_env['GB_MQ_EPG_QUEUE'], on_message_callback=callback)
     channel.start_consuming()
 
 

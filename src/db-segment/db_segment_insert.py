@@ -6,12 +6,16 @@ import json
 import time
 import psycopg2
 
+DB_HOST="localhost"
+DB_DATABASE="epg"
+DB_USER="postgres"
+DB_PASS="31233123"
+    
 gb_env = {}
 db_conn = None
 db_cur = None
 
-for var in ['MQ_HOST', 'MQ_EXCHANGE', 'MQ_USER', 'MQ_PASS',
-        'DB_HOST', 'DB_DATABASE', 'DB_USER', 'DB_PASS']:
+for var in ['GB_MQ_HOST', 'GB_MQ_SEG_INFO_QUEUE', 'GB_MQ_USER', 'GB_MQ_PASS']:
     if not os.environ.get(var):
         print(f"Please set ENVIRONMENT veriable {var!r}")
         sys.exit(-1)
@@ -23,23 +27,27 @@ def db_connection():
     global gb_env, db_conn, db_cur
     
     db_conn = psycopg2.connect(
-        host = gb_env['DB_HOST'],
-        database = gb_env['DB_DATABASE'],
-        user = gb_env['DB_USER'],
-        password = gb_env['DB_PASS'])
+            host = DB_HOST,
+            database = DB_DATABASE,
+            user = DB_USER,
+            password = DB_PASS)
     db_cur = db_conn.cursor()
     print('Connected to PostgreSQL')
 
 def start():
-    credentials = pika.PlainCredentials(gb_env['MQ_USER'], gb_env['MQ_PASS'])
+    credentials = pika.PlainCredentials(gb_env['GB_MQ_USER'], gb_env['GB_MQ_PASS'])
     parameters = pika.ConnectionParameters(
-            gb_env['MQ_HOST'], 5672, '/', credentials)
+            gb_env['GB_MQ_HOST'], 5672, '/', credentials)
     connection = pika.BlockingConnection(parameters)
     channel = connection.channel()
-    channel.exchange_declare(exchange= gb_env['MQ_EXCHANGE'], exchange_type='fanout')
+
+    channel.queue_declare(queue=gb_env['GB_MQ_SEG_INFO_QUEUE'], durable=True)
+    '''
+    channel.exchange_declare(exchange= gb_env['GB_MQ_EXCHANGE'], exchange_type='fanout')
     result = channel.queue_declare(queue='', exclusive=True)
     queue_name = result.method.queue
-    channel.queue_bind(exchange=gb_env['MQ_EXCHANGE'], queue=queue_name)
+    channel.queue_bind(exchange=gb_env['GB_MQ_EXCHANGE'], queue=queue_name)
+    '''
 
     def callback(ch, method, properties, body):
         global db_cur
@@ -63,10 +71,10 @@ def start():
             print(f"{insert}")
         except Exception as err:
             print(f"Error(1): ", str(err))
+        ch.basic_ack(delivery_tag=method.delivery_tag)
 
-
-    channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
-    print('Wait to MQ ... ')
+    channel.basic_qos(prefetch_count=1)
+    channel.basic_consume(queue=gb_env['GB_MQ_SEG_INFO_QUEUE'], on_message_callback=callback)
     channel.start_consuming()
 
 
