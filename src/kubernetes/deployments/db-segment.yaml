@@ -52,3 +52,9 @@ spec:
                 configMapKeyRef:
                   name: gb-config
                   key: gb-mq-seg-info-queue
+          volumeMounts:
+            - mountPath: /data
+              name: db-data
+      volumes:
+        - name: db-data
+          emptyDir: {}    # TODO: MUST BE PERSISTENT

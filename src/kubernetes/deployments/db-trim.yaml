@@ -31,3 +31,9 @@ spec:
           image: localhost:32000/db-trim:registry
           ports:
             - containerPort: 80
+          volumeMounts:
+            - mountPath: /data
+              name: db-data
+      volumes:
+        - name: db-data
+          emptyDir: {}    # TODO: MUST BE PERSISTENT
