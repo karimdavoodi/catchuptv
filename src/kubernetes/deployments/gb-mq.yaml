@@ -32,14 +32,6 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 5762
-          env:
-            - name: GB_MQ_USER
-              valueFrom:
-                configMapKeyRef:
-                  name: gb-config
-                  key: gb-mq-user
-            - name: GB_MQ_PASS
-              valueFrom:
-                configMapKeyRef:
-                  name: gb-config
-                  key: gb-mq-pass
+          envFrom:
+            - configMapRef:
+                name: gb-config

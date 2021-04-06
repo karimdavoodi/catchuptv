@@ -32,27 +32,9 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 3000
-          env:
-            - name: GB_MQ_HOST
-              valueFrom:
-                configMapKeyRef:
-                  name: gb-config
-                  key: gb-mq-host
-            - name: GB_MQ_USER
-              valueFrom:
-                configMapKeyRef:
-                  name: gb-config
-                  key: gb-mq-user
-            - name: GB_MQ_PASS
-              valueFrom:
-                configMapKeyRef:
-                  name: gb-config
-                  key: gb-mq-pass
-            - name: GB_MQ_EPG_QUEUE
-              valueFrom:
-                configMapKeyRef:
-                  name: gb-config
-                  key: gb-mq-epg-queue
+          envFrom:
+            - configMapRef:
+                name: gb-config
           volumeMounts:
             - mountPath: /data
               name: db-data

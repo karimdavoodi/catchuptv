@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: chan-net-to-epg-deployment
+  name: test-net-stream-deployment
 spec:
   selector:
     matchLabels:
-      app: chan-net-to-epg
+      app: test-net-stream
   replicas: 1
   template:
     metadata:
       labels:
-        app: chan-net-to-epg
+        app: test-net-stream
     spec:
       containers:
-        - name: chan-net-to-epg
-          image: chan-net-to-epg
+        - name: test-net-stream
+          image: test-net-stream
           imagePullPolicy: Never
           envFrom:
             - configMapRef:

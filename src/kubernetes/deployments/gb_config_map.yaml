@@ -3,19 +3,14 @@ kind: ConfigMap
 metadata:
   name: gb-config
 data:
-  gb-mq-host: "gb-mq"
-  # TODO: move to Secret
-  gb-mq-user: "karim"
-  gb-mq-pass: "31233123"
-  gb-mq-epg-queue: "epg"
-  gb-mq-seg-info-queue: "seg-info"
-  gb-mq-seg-data-queue: "seg-data"
-  # TODO: For each EPG pod ...
-  epg-source-type: "dvb"
-  epg-source-url: "udp://224.2.2.2:2000"
-  gst-app-debug-level: "5"
-  # file-like keys
-  fs-segment.nginx.config: |
-    server {
-
-    }
+  DEBUG_LEVEL: "5"
+  GB_MQ_HOST: "gb-mq"
+  # TODO: MOVE TO SECRET
+  GB_MQ_USER: "karim"
+  GB_MQ_PASS: "31233123"
+  GB_MQ_EPG_QUEUE: "epg"
+  GB_MQ_SEG_INFO_QUEUE: "seg_info"
+  GB_MQ_SEG_DATA_QUEUE: "seg_data"
+  # TODO: FOR EACH EPG POD ...
+  EPG_SOURCE_TYPE: "dvb"
+  EPG_SOURCE_URL: "udp://224.2.2.2:2000"
