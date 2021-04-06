@@ -28,7 +28,8 @@ spec:
     spec:
       containers:
         - name: db-epg
-          image: localhost:32000/db-epg:registry
+          image: db-epg
+          imagePullPolicy: Never
           ports:
             - containerPort: 3000
           env:

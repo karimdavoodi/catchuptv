@@ -28,7 +28,8 @@ spec:
     spec:
       containers:
         - name: db-trim
-          image: localhost:32000/db-trim:registry
+          image: db-trim
+          imagePullPolicy: Never
           ports:
             - containerPort: 80
           volumeMounts:

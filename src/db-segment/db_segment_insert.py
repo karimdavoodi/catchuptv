@@ -1,4 +1,5 @@
 #!/usr/bin/gb_env python
+from __future__ import print_function
 import os
 import sys
 import pika
@@ -15,9 +16,12 @@ gb_env = {}
 db_conn = None
 db_cur = None
 
+def eprint(*args, **kwargs):
+        print(*args, file=sys.stderr, **kwargs)
+        
 for var in ['GB_MQ_HOST', 'GB_MQ_SEG_INFO_QUEUE', 'GB_MQ_USER', 'GB_MQ_PASS']:
     if not os.environ.get(var):
-        print(f"Please set ENVIRONMENT veriable {var!r}")
+        eprint(f"Please set ENVIRONMENT veriable {var!r}")
         sys.exit(-1)
     gb_env[var] = os.environ[var]
     
@@ -32,7 +36,7 @@ def db_connection():
             user = DB_USER,
             password = DB_PASS)
     db_cur = db_conn.cursor()
-    print('Connected to PostgreSQL')
+    eprint('Connected to PostgreSQL')
 
 def start():
     credentials = pika.PlainCredentials(gb_env['GB_MQ_USER'], gb_env['GB_MQ_PASS'])
@@ -53,7 +57,7 @@ def start():
         global db_cur
         try:
             if not db_cur:
-                print('invalid db cursor')
+                eprint('invalid db cursor')
                 return
             rec = json.loads(body.decode())
             channel      = rec['channel'] 
@@ -68,9 +72,9 @@ def start():
                     f"({channel!r},{channelSid},{programName!r},{programStart},{programEnd}"
                     )
             db_cur.execute(insert)
-            print(f"{insert}")
+            eprint(f"{insert}")
         except Exception as err:
-            print(f"Error(1): ", str(err))
+            eprint(f"Error(1): ", str(err))
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
     channel.basic_qos(prefetch_count=1)
@@ -81,9 +85,9 @@ def start():
 if __name__ == '__main__':
     while True:
         try:
-            print("Start insert process")
+            eprint("Start insert process")
             db_connection()
             start()
         except Exception as err:
-            print('Error(2):', str(err))
+            eprint('Error(2):', str(err))
         time.sleep(15)

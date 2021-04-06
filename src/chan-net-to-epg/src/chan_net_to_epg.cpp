@@ -54,5 +54,6 @@ int main(int argc, char *argv[])
     }else{
         LOG(error) << "Invalid EPG source type " << epg_source_type;
     }
+    LOG(error) << "EXIT!";
 }
 

@@ -13,6 +13,7 @@ data:
   # TODO: For each EPG pod ...
   epg-source-type: "dvb"
   epg-source-url: "udp://224.2.2.2:2000"
+  gst-app-debug-level: "5"
   # file-like keys
   fs-segment.nginx.config: |
     server {

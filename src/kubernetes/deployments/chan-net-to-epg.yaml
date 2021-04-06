@@ -14,8 +14,14 @@ spec:
     spec:
       containers:
         - name: chan-net-to-epg
-          image: localhost:32000/chan-net-to-epg:registry
+          image: chan-net-to-epg
+          imagePullPolicy: Never
           env:
+            - name: DEBUG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: gb-config
+                  key: gst-app-debug-level
             - name: GB_MQ_HOST
               valueFrom:
                 configMapKeyRef:

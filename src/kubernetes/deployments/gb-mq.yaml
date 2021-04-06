@@ -28,7 +28,8 @@ spec:
     spec:
       containers:
         - name: gb-mq
-          image: localhost:32000/gb-mq:registry
+          image: gb-mq
+          imagePullPolicy: Never
           ports:
             - containerPort: 5762
           env:

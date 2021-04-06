@@ -42,10 +42,7 @@ void udp_to_epg(const char* mpts_url, MqProducer& mq)
 
     try{
         Edata edata;
-        if(init_data(edata) == 0){
-            LOG(warning) << "Not found active channel for " << mpts_url;
-            return;
-        }
+        init_data(edata);
         edata.d.loop      = g_main_loop_new(nullptr, false);
         edata.d.pipeline  = GST_PIPELINE(gst_element_factory_make("pipeline", nullptr));
         auto udpsrc     = Gst::add_element(edata.d.pipeline, "udpsrc"),
@@ -64,6 +61,7 @@ void udp_to_epg(const char* mpts_url, MqProducer& mq)
 
         std::thread t([&](){
                     Util::wait(60000);
+                    LOG(info) << "Quit from EPG pipeline";
                     g_main_loop_quit(edata.d.loop);
                 });
         

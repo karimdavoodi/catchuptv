@@ -1,8 +1,8 @@
 #!/bin/sh
 
-RABBITMQ_PID_FILE=/var/lib/rabbitmq/mnesia/rabbitmq
+PID_FILE=/var/lib/rabbitmq/mnesia/rabbit@`hostname`.pid
 # Create Rabbitmq user
-( rabbitmqctl wait --timeout 60 $RABBITMQ_PID_FILE ; \
+( rabbitmqctl wait --timeout 60 $PID_FILE ; \
 rabbitmqctl add_user $GB_MQ_USER $GB_MQ_PASS 2>/dev/null ; \
 rabbitmqctl set_user_tags $GB_MQ_USER administrator ; \
 rabbitmqctl set_permissions -p / $GB_MQ_USER  ".*" ".*" ".*" ; \

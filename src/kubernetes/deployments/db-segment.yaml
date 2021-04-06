@@ -28,7 +28,8 @@ spec:
     spec:
       containers:
         - name: db-segment
-          image: localhost:32000/db-segment:registry
+          image: db-segment
+          imagePullPolicy: Never
           ports:
             - containerPort: 3000
           env:
