@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
     MqProducer mq(mq_epg_queue, mq_host, 5672, mq_user, mq_pass);        
+    LOG(info) << "Connect to MQ host " << mq_host << " queue " << mq_epg_queue;
     if(!strcmp(epg_source_type, "dvb")){
         while(true){
             udp_to_epg(epg_source_url, mq);

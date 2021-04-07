@@ -1,7 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: chan-net-to-epg-deployment
+  name: chan-net-to-epg-dep
+  labels:
+    tire: channel
+    topic: epg
 spec:
   selector:
     matchLabels:
@@ -11,6 +14,7 @@ spec:
     metadata:
       labels:
         app: chan-net-to-epg
+        topic: epg
     spec:
       containers:
         - name: chan-net-to-epg

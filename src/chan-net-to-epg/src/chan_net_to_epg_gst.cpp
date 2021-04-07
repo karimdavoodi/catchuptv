@@ -254,6 +254,17 @@ void channel_epg_update(Edata& edata, MqProducer& mq)
             }
         }
     }
+    while(add_to_db == 0){
+        sleep(5);
+        LOG(info) << "Gen dummy EPG for test";
+        json rec = json::object();
+        rec["channelSid"] = 0;
+        rec["channel"] = "dummy"; // TODO: find channel name 
+        rec["programName"] = "NoEPG";
+        rec["programStart"] = 1600000000;
+        rec["programEnd"] =   1600000100;
+        mq.send(rec.dump());
+    }     
     LOG(info) << "EPG number that add to DB:" << add_to_db;
 
 }

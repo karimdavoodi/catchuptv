@@ -14,8 +14,11 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     iputils-ping                    \
     vim curl wget                   \
     postgresql-client-12            \
+    python3-psycopg2 python3-pip \
     tzdata                          \
     && rm -rf /var/lib/apt/lists/*
 
+RUN pip3 install pika
+COPY mq-test.py  /
 
 CMD [ "/bin/bash", "-c","while true;do sleep 5; echo 'running'; done" ]

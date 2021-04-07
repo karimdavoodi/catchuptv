@@ -13,7 +13,7 @@ bool MqProducer::connect()
     try{
         conn = AmqpClient::Channel::Create(host, port, username, password, vhost, frame_max);
         //conn->DeclareExchange(exchange, Channel::EXCHANGE_TYPE_FANOUT);
-        conn->DeclareQueue(queue);
+        conn->DeclareQueue(queue, false, true, false, false);
         LOG(info) << "Connect to MQ, "
             << " Host:" << host
             << " Queue:" << queue;

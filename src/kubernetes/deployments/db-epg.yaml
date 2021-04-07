@@ -1,43 +1,150 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-epg-config
+data:
+  GB_MQ_HOST: "gb-mq"
+  # TODO: MOVE  TO SECRET
+  GB_MQ_USER: "karim"
+  GB_MQ_PASS: "31233123"
+  GB_MQ_EPG_QUEUE: "epg"
+
+  # For PostgreSQL
+  POSTGRES_HOST: "db-epg-postgres"
+  POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "31233123"
+  POSTGRES_DB: "postgres"
+  PGDATA: "/data"
+
+  PGRST_DB_URI: "postgres://postgres:31233123@db-epg-postgres:5432/postgres"
+  PGRST_DB_SCHEMA: "public"
+  PGRST_DB_ANON_ROLE: "postgres"
+
+  init.sql: |
+    CREATE DATABASE epg;
+    GRANT ALL PRIVILEGES ON DATABASE epg TO postgres;
+---
+apiVersion: v1
 kind: Service
 metadata:
-  name: db-epg
+  name: db-epg-postgrest
   labels:
-    app: db-epg
+    app: db-epg-postgrest
+    topic: epg
 spec:
   ports:
     - port: 3000
       targetPort: 3000
   selector:
-    app: db-epg
-
+    app: db-epg-postgrest
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-epg-postgres
+  labels:
+    app: db-epg-postgres
+    topic: epg
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app: db-epg-postgres
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: db-epg-deployment
+  name: db-epg-postgrest-dep
+  labels:
+    tire: core
+    topic: epg
 spec:
   selector:
     matchLabels:
-      app: db-epg
+      app: db-epg-postgrest
   replicas: 1
   template:
     metadata:
       labels:
-        app: db-epg
+        app: db-epg-postgrest
+        topic: epg
     spec:
       containers:
-        - name: db-epg
-          image: db-epg
+        - name: db-epg-postgrest
+          image: postgrest/postgrest
           imagePullPolicy: Never
           ports:
             - containerPort: 3000
           envFrom:
             - configMapRef:
-                name: gb-config
+                name: db-epg-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-epg-postgres-dep
+  labels:
+    tire: core
+    topic: epg
+spec:
+  selector:
+    matchLabels:
+      app: db-epg-postgres
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: db-epg-postgres
+        topic: epg
+    spec:
+      containers:
+        - name: db-epg-postgres
+          image: postgres
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: db-epg-config
           volumeMounts:
-            - mountPath: /data
-              name: db-data
+            - name: db-data
+              mountPath: /data
+#           - name: init-db-sql
+#             mountPath: /docker-entrypoint-initdb.d
       volumes:
         - name: db-data
-          emptyDir: {}    # TODO: MUST BE PERSISTENT
+          persistentVolumeClaim:
+            claimName: pvc-db-epg
+#        - name: init-db-sql
+#          configMap:
+#            name: db-epg-config
+#            items:
+#              - key: init.sql
+#                path: init.sql
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-epg-insert-dep
+  labels:
+    tire: core
+    topic: epg
+spec:
+  selector:
+    matchLabels:
+      app: db-epg-insert
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: db-epg-insert
+        topic: epg
+    spec:
+      containers:
+        - name: db-epg-insert
+          image: db-insert
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: db-epg-config

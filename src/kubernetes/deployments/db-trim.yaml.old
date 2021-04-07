@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-trim
+  labels:
+    app: db-trim
+    topic: trim
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    app: db-trim
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-trim-deployment
+  labels:
+    tire: core
+    topic: trim
+spec:
+  selector:
+    matchLabels:
+      app: db-trim
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: db-trim
+    spec:
+      containers:
+        - name: db-trim
+          image: db-trim
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: gb-config
+          volumeMounts:
+            - mountPath: /data
+              name: db-data
+      volumes:
+        - name: db-data
+          emptyDir: {}    # TODO: MUST BE PERSISTENT

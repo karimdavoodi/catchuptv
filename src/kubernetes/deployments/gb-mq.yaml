@@ -16,6 +16,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gb-mq-deployment
+  labels:
+    tire: core
+    topic: mq
 spec:
   selector:
     matchLabels:
@@ -28,7 +31,7 @@ spec:
     spec:
       containers:
         - name: gb-mq
-          image: gb-mq
+          image: rabbitmq
           imagePullPolicy: Never
           ports:
             - containerPort: 5762

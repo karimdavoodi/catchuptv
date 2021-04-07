@@ -1,43 +1,142 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-segment-config
+data:
+  GB_MQ_HOST: "gb-mq"
+  # TODO: MOVE  TO SECRET
+  GB_MQ_USER: "karim"
+  GB_MQ_PASS: "31233123"
+  GB_MQ_SEQ_INFO_QUEUE: "seg_info"
+
+  # For PostgreSQL
+  POSTGRES_HOST: "db-segment-postgres"
+  POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "31233123"
+  POSTGRES_DB: "postgres"
+  PGDATA: "/data"
+
+  PGRST_DB_URI: "postgres://postgres:31233123@db-segment-postgres:5432/postgres"
+  PGRST_DB_SCHEMA: "public"
+  PGRST_DB_ANON_ROLE: "postgres"
+
+  init.sql: |
+    CREATE DATABASE segment;
+    GRANT ALL PRIVILEGES ON DATABASE segment TO postgres;
+---
+apiVersion: v1
 kind: Service
 metadata:
-  name: db-segment
+  name: db-segment-postgrest
   labels:
-    app: db-segment
+    app: db-segment-postgrest
+    topic: segment
 spec:
   ports:
     - port: 3000
       targetPort: 3000
   selector:
-    app: db-segment
-
+    app: db-segment-postgrest
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-segment-postgres
+  labels:
+    app: db-segment-postgres
+    topic: segment
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app: db-segment-postgres
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: db-segment-deployment
+  name: db-segment-postgrest-dep
+  labels:
+    tire: core
+    topic: segment
 spec:
   selector:
     matchLabels:
-      app: db-segment
+      app: db-segment-postgrest
   replicas: 1
   template:
     metadata:
       labels:
-        app: db-segment
+        app: db-segment-postgrest
+        topic: segment
     spec:
       containers:
-        - name: db-segment
-          image: db-segment
+        - name: db-segment-postgrest
+          image: postgrest/postgrest
           imagePullPolicy: Never
           ports:
             - containerPort: 3000
           envFrom:
             - configMapRef:
-                name: gb-config
+                name: db-segment-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-segment-postgres-dep
+  labels:
+    tire: core
+    topic: segment
+spec:
+  selector:
+    matchLabels:
+      app: db-segment-postgres
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: db-segment-postgres
+        topic: segment
+    spec:
+      containers:
+        - name: db-segment-postgres
+          image: postgres
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: db-segment-config
           volumeMounts:
-            - mountPath: /data
-              name: db-data
+            - name: db-data
+              mountPath: /data
       volumes:
         - name: db-data
-          emptyDir: {}    # TODO: MUST BE PERSISTENT
+          persistentVolumeClaim:
+            claimName: pvc-db-segment
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-segment-insert-dep
+  labels:
+    tire: core
+    topic: segment
+spec:
+  selector:
+    matchLabels:
+      app: db-segment-insert
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: db-segment-insert
+        topic: segment
+    spec:
+      containers:
+        - name: db-segment-insert
+          image: db-insert
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: db-segment-config
