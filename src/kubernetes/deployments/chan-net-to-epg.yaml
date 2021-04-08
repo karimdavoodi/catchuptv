@@ -1,3 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chan-net-to-epg-config
+data:
+  EPG_SOURCE_TYPE: "dvb"
+  EPG_SOURCE_URL: "udp://224.2.2.2:2000"
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -23,3 +31,5 @@ spec:
           envFrom:
             - configMapRef:
                 name: gb-config
+            - configMapRef:
+                name: chan-net-to-epg-config
