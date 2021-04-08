@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
         - name: gb-mq
-          image: rabbitmq
+          image: rabbitmq:3.8
           imagePullPolicy: Never
           ports:
             - containerPort: 5762

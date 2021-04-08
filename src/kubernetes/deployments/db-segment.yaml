@@ -100,7 +100,7 @@ spec:
     spec:
       containers:
         - name: db-segment-postgres
-          image: postgres
+          image: postgres:13.2
           imagePullPolicy: Never
           ports:
             - containerPort: 5432
