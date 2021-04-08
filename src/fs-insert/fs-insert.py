@@ -1,4 +1,5 @@
-#!/usr/bin/gb_env python
+#!/usr/bin/python3
+from __future__ import print_function
 import os
 import sys
 import pika
@@ -8,7 +9,10 @@ import time
 channels_content_root = '/data/'
 gb_env = {}
 
-for var in ['MQ_SRC_HOST', 'MQ_SRC_QUEUE', 'MQ_SRC_USER', 'MQ_SRC_PASS',
+def eprint(*args, **kwargs):
+        print(*args, file=sys.stderr, flush=True, **kwargs)
+
+for var in ['GB_MQ_HOST', 'GB_MQ_USER', 'GB_MQ_PASS','GB_MQ_SEQ_DATA_QUEUE', 
             'MQ_CACHE_HOST', 'MQ_CACHE_QUEUE', 'MQ_CACHE_USER', 'MQ_CACHE_PASS']:
     if not os.environ.get(var):
         print(f"Please set ENVIRONMENT veriable {var!r}")
@@ -16,27 +20,33 @@ for var in ['MQ_SRC_HOST', 'MQ_SRC_QUEUE', 'MQ_SRC_USER', 'MQ_SRC_PASS',
     gb_env[var] = os.environ[var]
     
 
-
 def start():
     # INIT SRC
-    credentials = pika.PlainCredentials(gb_env['MQ_SRC_USER'], gb_env['MQ_SRC_PASS'])
-    parameters = pika.ConnectionParameters(
-            gb_env['MQ_SRC_HOST'], 5672, '/', credentials)
+    credentials = pika.PlainCredentials(gb_env['GB_MQ_USER'], gb_env['GB_MQ_PASS'])
+    parameters = pika.ConnectionParameters(gb_env['GB_MQ_HOST'], 5672, '/', credentials)
     connection = pika.BlockingConnection(parameters)
-    channel = connection.channel()
-    channel.queue_declare(queue=gb_env['MQ_SRC_QUEUE'], durable=True)
+    src_channel = connection.channel()
+    src_channel.queue_declare(
+            queue=gb_env['MQ_SRC_QUEUE'], 
+            passive=False, 
+            durable=True,  
+            exclusive=False, 
+            auto_delete=False)
     # INIT DEST
     _credentials = pika.PlainCredentials(gb_env['MQ_CACHE_USER'], gb_env['MQ_CACHE_PASS'])
-    _parameters = pika.ConnectionParameters(
-            gb_env['MQ_CACHE_HOST'], 5672, '/', _credentials)
+    _parameters = pika.ConnectionParameters(gb_env['MQ_CACHE_HOST'], 5672, '/', _credentials)
     _connection = pika.BlockingConnection(parameters)
-    _channel = connection.channel()
-    _channel.queue_declare(queue=gb_env['MQ_CACHE_QUEUE'], durable=True)
+    dst_channel = _connection.channel()
+    dst_channel.queue_declare(
+            queue=gb_env['MQ_CACHE_QUEUE'], 
+            passive=False, 
+            durable=True,  
+            exclusive=False, 
+            auto_delete=False)
 
     def callback(ch, method, properties, body):
         try:
-            _channel.basic_publish( exchange='', routing_key=gb_env['MQ_CACHE_QUEUE'], 
-                    body=body)
+            dst_channel.basic_publish( exchange='', routing_key=gb_env['MQ_CACHE_QUEUE'],body=body)
             metadata = json.loads(body[:255].decode())
             start_time = metadata.get('start_time')
             channel_name = metadata.get('channel_name')
@@ -53,9 +63,9 @@ def start():
             print(f"Error(1): ", str(err))
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
-    channel.basic_qos(prefetch_count=1)
-    channel.basic_consume(queue=gb_env['MQ_SRC_QUEUE'], on_message_callback=callback)
-    channel.start_consuming()
+    src_channel.basic_qos(prefetch_count=1)
+    src_channel.basic_consume(queue=gb_env['MQ_SRC_QUEUE'], on_message_callback=callback)
+    src_channel.start_consuming()
 
 if __name__ == '__main__':
     while True:

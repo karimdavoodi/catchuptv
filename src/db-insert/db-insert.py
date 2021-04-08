@@ -77,7 +77,12 @@ def start():
     connection = pika.BlockingConnection(parameters)
     channel = connection.channel()
 
-    channel.queue_declare(queue=mq_queue, durable=True)
+    channel.queue_declare(
+            queue=mq_queue, 
+            passive=False, 
+            durable=True,  
+            exclusive=False, 
+            auto_delete=False)
 
     def callback(ch, method, properties, body):
         global db_cur

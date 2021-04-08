@@ -12,17 +12,6 @@ data:
   GB_MQ_SEG_INFO_QUEUE: "seg_info"
   GB_MQ_SEG_DATA_QUEUE: "seg_data"
 
-  # For PostgreSQL
-  POSTGRES_HOST: "localhost"
-  POSTGRES_USER: "postgres"
-  POSTGRES_PASSWORD: "31233123"
-  POSTGRES_DB: "postgres"
-  PGDATA: "/data"
-
-  # For access to postgres in db-epg and db-trim
-  PGRST_DB_URI: "postgres://postgres:31233123@localhost:5432/epg"
-  PGRST_DB_SCHEMA: "public"
-  PGRST_DB_ANON_ROLE: "postgres"
   # TODO: FOR EACH EPG POD ...
   EPG_SOURCE_TYPE: "dvb"
   EPG_SOURCE_URL: "udp://224.2.2.2:2000"

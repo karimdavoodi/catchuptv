@@ -12,10 +12,20 @@ spec:
       labels:
         app: test-net-stream
     spec:
+#      securityContext:
+#        runAsUser: 0
+#        runAsGroup: 0
+      volumes:
+        - name: seg-data
+          persistentVolumeClaim:
+            claimName: pvc-fs-segment
       containers:
         - name: test-net-stream
           image: test-net-stream
           imagePullPolicy: Never
+          volumeMounts:
+            - name: seg-data
+              mountPath: /test_data
           envFrom:
             - configMapRef:
                 name: gb-config
