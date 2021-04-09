@@ -45,29 +45,27 @@ else:
     eprint(f"Table name is invalid: {table_name}")
     sys.exit(-1)
     
-# Connect to PostgreSQL
 def db_connection():
     global gb_env, db_conn, db_cur, table_name
-    
-    db_conn = psycopg2.connect(
-            host = gb_env['POSTGRES_HOST'],
-            database = gb_env['POSTGRES_DB'],
-            user = gb_env['POSTGRES_USER'],
-            password = gb_env['POSTGRES_PASSWORD'])
-    db_conn.autocommit = True
-
-    db_cur = db_conn.cursor()
+    while True: 
+        try:
+            db_conn = psycopg2.connect(
+                host = gb_env['POSTGRES_HOST'],
+                database = gb_env['POSTGRES_DB'],
+                user = gb_env['POSTGRES_USER'],
+                password = gb_env['POSTGRES_PASSWORD'])
+            db_conn.autocommit = True
+            db_cur = db_conn.cursor()
+            break
+        except Exception as err:
+            eprint(str(err))
+            time.sleep(10)
     try:
         db_cur.execute(f"select * from {table_name}")
-        #rows = db_cur.fetchall()
-        #for r in rows:
-        #    eprint(str(r))
-
     except Exception as err:
         eprint(str(err))
         eprint(f"Try to create table: {table_struct}")
         db_cur.execute(table_struct)
-
     eprint(f"Connected to PostgreSQL host {gb_env['POSTGRES_HOST']}, db {gb_env['POSTGRES_DB']}")
 
 def start():

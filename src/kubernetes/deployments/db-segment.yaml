@@ -3,10 +3,6 @@ kind: ConfigMap
 metadata:
   name: db-segment-config
 data:
-  GB_MQ_HOST: "gb-mq"
-  # TODO: MOVE  TO SECRET
-  GB_MQ_USER: "karim"
-  GB_MQ_PASS: "31233123"
 
   # For PostgreSQL
   POSTGRES_HOST: "db-segment-postgres"

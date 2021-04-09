@@ -29,3 +29,26 @@ spec:
           envFrom:
             - configMapRef:
                 name: gb-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-busybox-deployment
+spec:
+  selector:
+    matchLabels:
+      app: test-busybox
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: test-busybox
+    spec:
+      containers:
+        - name: test-busybox
+          image: busybox:1.28
+          command: ['sh', '-c', "while true; do sleep 2; done"]
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: gb-config

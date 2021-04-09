@@ -148,3 +148,7 @@ spec:
           envFrom:
             - configMapRef:
                 name: db-epg-config
+      initContainers:
+        - name: wait-for-mq
+          image: busybox:1.28
+          command: ['sh', '-c', "until nslookup gb-mq; do echo 'Wait for gb-mq'; sleep 3; done"]

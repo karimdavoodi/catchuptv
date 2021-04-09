@@ -8,8 +8,7 @@ import pyinotify
 from threading import Thread
 
 gb_env = {}
-channel_data = None
-seg_queue = []
+channel_seg = None
 
 
 def eprint(*args, **kwargs):
@@ -70,7 +69,6 @@ def make_daemon(func_name, func_args:str = ""):
     t.start()
 
 def sys_run_loop_forever(cmd:str):
-
     def run_loop(cmd:str):
         eprint(f"Run:" + cmd)
         while True:
@@ -80,7 +78,7 @@ def sys_run_loop_forever(cmd:str):
     make_daemon(run_loop, func_args=cmd)
 
 def send_seg_to_mq(info, file_path):
-    global channel_data
+    global channel_seg
 
     with open(file_path, 'rb') as f:
         merg = bytearray(str(info).encode())
@@ -88,51 +86,62 @@ def send_seg_to_mq(info, file_path):
             merg.extend(' '.encode('latin-1'))
         merg.extend(f.read())
         eprint(f"Try to send data to MQ by len:{len(merg)}")
-        channel_data.basic_publish( exchange='', 
+        try:
+            channel_seg.basic_publish( exchange='', 
                 routing_key=gb_env['GB_MQ_SEG_QUEUE'],
                 body=merg)
+        except Exception as err:
+            eprint(str(err))
+            eprint("Try to connect MQ again!")
+            init_mq()
              
 def init_mq():
-    global channel_data
+    global channel_seg
+    while True:
+        try:
+            credentials = pika.PlainCredentials(gb_env['GB_MQ_USER'], gb_env['GB_MQ_PASS'])
+            parameters = pika.ConnectionParameters(
+                    gb_env['GB_MQ_HOST'], 5672, '/', credentials)
+            connection_data = pika.BlockingConnection(parameters)
+            channel_seg = connection_data.channel()
+            channel_seg.queue_declare(
+                    queue=gb_env['GB_MQ_SEG_QUEUE'], 
+                    passive=False, 
+                    durable=True,  
+                    exclusive=False, 
+                    auto_delete=False)
+            break
+        except Exception as err:
+            eprint(str(err))
+            time.sleep(10)
 
-    credentials = pika.PlainCredentials(gb_env['GB_MQ_USER'], gb_env['GB_MQ_PASS'])
-    parameters = pika.ConnectionParameters(
-            gb_env['GB_MQ_HOST'], 5672, '/', credentials)
-    connection_data = pika.BlockingConnection(parameters)
-    channel_data = connection_data.channel()
-    channel_data.queue_declare(
-            queue=gb_env['GB_MQ_SEG_QUEUE'], 
-            passive=False, 
-            durable=True,  
-            exclusive=False, 
-            auto_delete=False)
-    eprint('Init MQ')
+    eprint('Connect to '+gb_env['GB_MQ_HOST'])
 
 def watch_segments():
     wm = pyinotify.WatchManager()
     notifier = pyinotify.Notifier(wm)
 
     def callback(event):
-        seg = event.name.split('_')
-        if len(seg)>2:
-            seq = int(seg[0])
-            start = float(seg[1])
-            duration = float(seg[2][:-3]) / 1000000
-            info = {
-                'channel': gb_env['CHANNEL_NAME'],
-                'sequence': seq,
-                'start': start,
-                'duration': duration
-                }
-            send_seg_to_mq(info, event.pathname)
-
-
+        try:
+            seg = event.name.split('_')
+            if len(seg)>2:
+                seq = int(seg[0])
+                start = float(seg[1])
+                duration = float(seg[2][:-3]) / 1000000
+                info = {
+                    'channel': gb_env['CHANNEL_NAME'],
+                    'sequence': seq,
+                    'start': start,
+                    'duration': duration
+                    }
+                send_seg_to_mq(info, event.pathname)
+        except Exception as err:
+            eprint(str(err))
+    eprint(f"Watch to /hls")
     wm.add_watch('/hls', pyinotify.IN_MOVED_TO, callback)
     notifier.loop()
-
 
 if __name__ == '__main__':
     init_mq()
     start_ffmpeg_thread()
     watch_segments()
-	#push_to_mq()

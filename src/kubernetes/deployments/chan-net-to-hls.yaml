@@ -48,3 +48,10 @@ spec:
                 name: gb-config
             - configMapRef:
                 name: chan-net-to-hls-config
+      initContainers:
+        - name: wait-for-mq
+          image: busybox:1.28
+          command: ['sh', '-c', "until nslookup gb-mq; do echo 'Wait for gb-mq'; sleep 3; done"]
+        - name: wait-for-seg-db
+          image: busybox:1.28
+          command: ['sh', '-c', "until nslookup db-segment-postgres; do echo 'Wait for db-segment-postgres'; sleep 3; done"]
