@@ -4,17 +4,17 @@ metadata:
   name: gb-config
 data:
   DEBUG_LEVEL: "5"
-  GB_MQ_HOST: "gb-mq"
   # TODO: MOVE TO SECRET
   GB_MQ_USER: "karim"
   GB_MQ_PASS: "31233123"
   GB_MQ_EPG_QUEUE: "epg"
-  GB_MQ_SEG_INFO_QUEUE: "seg_info"
-  GB_MQ_SEG_DATA_QUEUE: "seg_data"
-
-  # TODO: FOR EACH EPG POD ...
-  EPG_SOURCE_TYPE: "dvb"
-  EPG_SOURCE_URL: "udp://224.2.2.2:2000"
+  GB_MQ_SEG_QUEUE: "seg"
 
   RABBITMQ_DEFAULT_USER: "karim"
   RABBITMQ_DEFAULT_PASS: "31233123"
+
+  GB_MQ_HOST: "gb-mq"
+  DB_SEGMENT_HOST: "db-segment-postgres"
+  DB_TRIM_HOST: "db-trim-postgres"
+  DB_EPG_HOST: "db-epg-postgres"
+  MQ_CACHE_HOST: "live-mq"

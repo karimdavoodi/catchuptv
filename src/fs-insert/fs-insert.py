@@ -12,7 +12,7 @@ gb_env = {}
 def eprint(*args, **kwargs):
         print(*args, file=sys.stderr, flush=True, **kwargs)
 
-for var in ['GB_MQ_HOST', 'GB_MQ_USER', 'GB_MQ_PASS','GB_MQ_SEQ_DATA_QUEUE', 
+for var in ['GB_MQ_HOST', 'GB_MQ_USER', 'GB_MQ_PASS','GB_MQ_SEQ_QUEUE', 
             'MQ_CACHE_HOST', 'MQ_CACHE_QUEUE', 'MQ_CACHE_USER', 'MQ_CACHE_PASS']:
     if not os.environ.get(var):
         print(f"Please set ENVIRONMENT veriable {var!r}")
@@ -27,7 +27,7 @@ def start():
     connection = pika.BlockingConnection(parameters)
     src_channel = connection.channel()
     src_channel.queue_declare(
-            queue=gb_env['MQ_SRC_QUEUE'], 
+            queue=gb_env['GB_MQ_SEG_QUEUE'], 
             passive=False, 
             durable=True,  
             exclusive=False, 
@@ -46,7 +46,12 @@ def start():
 
     def callback(ch, method, properties, body):
         try:
-            dst_channel.basic_publish( exchange='', routing_key=gb_env['MQ_CACHE_QUEUE'],body=body)
+            try:
+                dst_channel.basic_publish( exchange='', 
+                    routing_key=gb_env['MQ_CACHE_QUEUE'],
+                    body=body)
+            except Exception as err:
+                eprint(str(err))
             metadata = json.loads(body[:255].decode())
             start_time = metadata.get('start_time')
             channel_name = metadata.get('channel_name')
@@ -64,7 +69,7 @@ def start():
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
     src_channel.basic_qos(prefetch_count=1)
-    src_channel.basic_consume(queue=gb_env['MQ_SRC_QUEUE'], on_message_callback=callback)
+    src_channel.basic_consume(queue=gb_env['GB_MQ_SEG_QUEUE'], on_message_callback=callback)
     src_channel.start_consuming()
 
 if __name__ == '__main__':

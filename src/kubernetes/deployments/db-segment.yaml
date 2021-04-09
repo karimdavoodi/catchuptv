@@ -7,7 +7,6 @@ data:
   # TODO: MOVE  TO SECRET
   GB_MQ_USER: "karim"
   GB_MQ_PASS: "31233123"
-  GB_MQ_SEQ_INFO_QUEUE: "seg_info"
 
   # For PostgreSQL
   POSTGRES_HOST: "db-segment-postgres"
@@ -114,29 +113,3 @@ spec:
         - name: db-data
           persistentVolumeClaim:
             claimName: pvc-db-segment
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: db-segment-insert-dep
-  labels:
-    tire: core
-    topic: segment
-spec:
-  selector:
-    matchLabels:
-      app: db-segment-insert
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        app: db-segment-insert
-        topic: segment
-    spec:
-      containers:
-        - name: db-segment-insert
-          image: db-insert
-          imagePullPolicy: Never
-          envFrom:
-            - configMapRef:
-                name: db-segment-config

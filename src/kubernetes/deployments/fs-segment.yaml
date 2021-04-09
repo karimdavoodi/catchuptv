@@ -3,13 +3,6 @@ kind: ConfigMap
 metadata:
   name: fs-segment-config
 data:
-  GB_MQ_HOST: "gb-mq"
-  # TODO: MOVE  TO SECRET
-  GB_MQ_USER: "karim"
-  GB_MQ_PASS: "31233123"
-  GB_MQ_SEQ_DATA_QUEUE: "seg_data"
-
-  MQ_CACHE_HOST: "live-mq"
   MQ_CACHE_QUEUE: "segment"
   MQ_CACHE_USER: "karim"
   MQ_CACHE_PASS: "31233123"

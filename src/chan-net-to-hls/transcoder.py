@@ -4,10 +4,10 @@ import os
 import sys
 import time
 import pika
+import pyinotify
 from threading import Thread
 
 gb_env = {}
-channel_info = None
 channel_data = None
 seg_queue = []
 
@@ -27,8 +27,7 @@ for var in [
         'HLS_VIDEO_FPS',
         'HLS_AUDIO_CODEC',
         'HLS_AUDIO_BITRATE',
-        'GB_MQ_SEG_INFO_QUEUE',
-        'GB_MQ_SEG_DATA_QUEUE']:
+        'GB_MQ_SEG_QUEUE']:
     if not os.environ.get(var):
         eprint(f"Please set ENVIRONMENT veriable {var!r}")
         sys.exit(-1)
@@ -54,9 +53,12 @@ def start_ffmpeg_thread():
     else:
         audio_attr = "-acodec copy"
     smap = '-map v -map a'
-    hls_attr = "-hls_time 5 -hls_list_size 5 -hls_flags delete_segments"
-    output = "-f hls /hls/p.m3u8"
-    cmd = f"ffmpeg -i {gb_env['CHANNEL_URL']!r} {smap} {video_attr} {audio_attr} {hls_attr} {output}"
+    hls_attr = "-hls_time 5 -hls_list_size 5 -hls_flags delete_segments "  \
+            "-hls_flags second_level_segment_duration+second_level_segment_index " \
+            "-strftime 1 -hls_segment_filename \"/hls/%%d_%s_%%t.ts\" " \
+            "-f hls /hls/p.m3u8"
+    cmd = "ffmpeg -v quiet "
+    cmd += f"-i {gb_env['CHANNEL_URL']!r} {smap} {video_attr} {audio_attr} {hls_attr}"
     sys_run_loop_forever(cmd)
 
 def make_daemon(func_name, func_args:str = ""):
@@ -77,84 +79,60 @@ def sys_run_loop_forever(cmd:str):
             eprint("Re Exceute :"+cmd)
     make_daemon(run_loop, func_args=cmd)
 
-def send_seg_data_to_mq(info, file_path):
+def send_seg_to_mq(info, file_path):
+    global channel_data
+
     with open(file_path, 'rb') as f:
-        merg = bytearray()
-        merg.append(str(info).encode())
+        merg = bytearray(str(info).encode())
         for i in range(255-len(merg)):
-            merg.append(' '.encode())
-        merg.append(f.read())
-        eprint(f"Try to send data to MQ by len:{len(info)}")
+            merg.extend(' '.encode('latin-1'))
+        merg.extend(f.read())
+        eprint(f"Try to send data to MQ by len:{len(merg)}")
         channel_data.basic_publish( exchange='', 
-                routing_key=gb_env['GB_MQ_SEG_DATA_QUEUE'],
+                routing_key=gb_env['GB_MQ_SEG_QUEUE'],
                 body=merg)
-
-def send_seg_info_to_mq(info):
-    eprint(f"Try to send info to MQ:{str(info)}")
-    channel_data.basic_publish( exchange='', 
-            routing_key=gb_env['GB_MQ_SEG_DATA_QUEUE'],
-            body=str(info))
-
-def parse_playlist():
-    dur = ""
-    with open('/hls/p.m3u8','rt') as f:
-        for l in f:
-            if '#EXTINF' in l:
-                seg_dur = float(l.split(':')[1].split(',')[0])
-            elif '.ts' in l:
-                name = l.rstrip()
-                if name in seg_queue: continue
-                seg_queue.append(name)
-                if len(seg_queue) > 100: seg_queue.pop(0)
-                seg_start = float(name.split('.ts')[0])
-                info = {
-                    'channel': gb_env['CHANNEL_NAME'],
-                    'start': seg_start,
-                    'duration': seg_dur
-                    }
-                send_seg_info_to_mq(info)
-                send_seg_data_to_mq(info, name)
-
-
-def push_to_mq():
-    last_time = 0
-    while True:
-        time.sleep(5)
-        try:
-            if os.path.exists('/hls/p.m3u8'):
-                p_time = os.stat('/hls/p.m3u8').st_mtime
-                if p_time != last_time:
-                    parse_playlist()
-                last_time = p_time
-            else:
-                eprint("Not found play list!")
-        except Exception as err:
-            eprint(str(err))
              
 def init_mq():
-    
+    global channel_data
+
     credentials = pika.PlainCredentials(gb_env['GB_MQ_USER'], gb_env['GB_MQ_PASS'])
     parameters = pika.ConnectionParameters(
             gb_env['GB_MQ_HOST'], 5672, '/', credentials)
-    connection_info = pika.BlockingConnection(parameters)
-    channel_info = connection_info.channel()
-    channel_info.queue_declare(
-            queue=gb_env['GB_MQ_SEG_INFO_QUEUE'], 
-            passive=False, 
-            durable=True,  
-            exclusive=False, 
-            auto_delete=False)
     connection_data = pika.BlockingConnection(parameters)
     channel_data = connection_data.channel()
     channel_data.queue_declare(
-            queue=gb_env['GB_MQ_SEG_DATA_QUEUE'], 
+            queue=gb_env['GB_MQ_SEG_QUEUE'], 
             passive=False, 
             durable=True,  
             exclusive=False, 
             auto_delete=False)
     eprint('Init MQ')
 
+def watch_segments():
+    wm = pyinotify.WatchManager()
+    notifier = pyinotify.Notifier(wm)
+
+    def callback(event):
+        seg = event.name.split('_')
+        if len(seg)>2:
+            seq = int(seg[0])
+            start = float(seg[1])
+            duration = float(seg[2][:-3]) / 1000000
+            info = {
+                'channel': gb_env['CHANNEL_NAME'],
+                'sequence': seq,
+                'start': start,
+                'duration': duration
+                }
+            send_seg_to_mq(info, event.pathname)
+
+
+    wm.add_watch('/hls', pyinotify.IN_MOVED_TO, callback)
+    notifier.loop()
+
+
 if __name__ == '__main__':
     init_mq()
     start_ffmpeg_thread()
-    push_to_mq()
+    watch_segments()
+	#push_to_mq()

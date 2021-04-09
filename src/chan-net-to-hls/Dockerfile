@@ -8,6 +8,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install pika
+RUN pip3 install pyinotify
 COPY transcoder.py  /
 
 ENV TZ=Asia/Istanbul
