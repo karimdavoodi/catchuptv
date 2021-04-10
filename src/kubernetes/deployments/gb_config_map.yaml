@@ -14,4 +14,4 @@ data:
   DB_SEGMENT_HOST: "db-segment-postgres"
   DB_TRIM_HOST: "db-trim-postgres"
   DB_EPG_HOST: "db-epg-postgres"
-  MQ_CACHE_HOST: "live-mq"
+  LIVE_CACHE_HOST: "live-cache"

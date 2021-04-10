@@ -5,6 +5,7 @@ import sys
 import pika
 import json
 import time
+import redis
 import psycopg2
 import traceback
 
@@ -19,7 +20,7 @@ def lprint():
 
 for var in ['GB_MQ_HOST', 'GB_MQ_USER', 'GB_MQ_PASS','GB_MQ_SEG_QUEUE', 
         'POSTGRES_HOST', 'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_DB',
-        'MQ_CACHE_HOST', 'MQ_CACHE_QUEUE', 'MQ_CACHE_USER', 'MQ_CACHE_PASS']:
+        'LIVE_CACHE_HOST', 'LIVE_CACHE_PASS']:
     if not os.environ.get(var):
         eprint(f"Please set ENVIRONMENT veriable {var!r}")
         sys.exit(-1)
@@ -65,6 +66,15 @@ def send_to_db(table, channel, sequence, start, duration, rtry = False):
         lprint()
     eprint(f"Wrote to DB seq start {start}")
 
+def connect_redis():
+    while True:
+        try:
+            return redis.Redis(host=gb_env['LIVE_CACHE_HOST'], 
+                    port=6379, password=gb_env['LIVE_CACHE_PASS'])
+        except:
+            lprint()
+            time.sleep(10)
+
 def start_consuming():
     # Connect to GB_MQ
     while True:
@@ -74,34 +84,17 @@ def start_consuming():
                     gb_env['GB_MQ_HOST'], 5672, '/', credentials)
             connection = pika.BlockingConnection(parameters)
             channel_seg = connection.channel()
-            '''
-            channel_seg.queue_declare(
-                    queue=gb_env['GB_MQ_SEG_QUEUE'], 
-                    passive=False, durable=True,  
-                    exclusive=False, auto_delete=False)
-            '''
             break
         except:
             lprint()
             time.sleep(10)
-    # Connect to CACHE_MQ
-    while True:
-        try:
-            credentials = pika.PlainCredentials(gb_env['MQ_CACHE_USER'], 
-                    gb_env['MQ_CACHE_PASS'])
-            parameters = pika.ConnectionParameters(gb_env['MQ_CACHE_HOST'], 
-                    5672, '/', credentials)
-            connection = pika.BlockingConnection(parameters)
-            channel_cache = connection.channel()
-            break
-        except:
-            lprint()
-            time.sleep(10)
+    # Connect to LIVE_CACHE
+    redis_con = connect_redis()
     def callback(ch, method, properties, body):
         try:
             try:
                 info_str = body[:255].decode()
-                info = json.loads(body[:255].decode())
+                info = json.loads(info_str)
             except:
                 eprint('invalid json:', info_str)
                 raise
@@ -114,16 +107,13 @@ def start_consuming():
             
             # Send to CACHE Queue
             try:
-                channel_cache.queue_declare(
-                    queue=channel_table, 
-                    passive=False, durable=True,  
-                    exclusive=False, auto_delete=False,
-                    arguments={'x-message-ttl' : 60000})
-                channel_cache.basic_publish( exchange='', 
-                    routing_key=channel_table, body=body)
-                eprint(f"Send to CACHE mq {channel_table} seg start {start}")
+                redis_con.set(f"{channel}:seq:last",sequence)
+                redis_con.set(f"{channel}:{sequence}:data",body[255:],100)
+                redis_con.set(f"{channel}:{sequence}:duration",duration,100)
+                eprint(f"Send to live cache {channel} seg seq {sequence}")
             except:
                 lprint()
+                redis_con = connect_redis()
                 
             # Send to DB
             send_to_db(channel_table, channel, sequence, start, duration)

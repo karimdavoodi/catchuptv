@@ -19,6 +19,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install pika
+RUN pip3 install redis
 COPY mq-test.py  /
 
 CMD [ "/bin/bash", "-c","while true;do sleep 5; echo 'running'; done" ]

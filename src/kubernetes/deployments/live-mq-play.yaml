@@ -1,10 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: live-mq-config
+  name: live-cache-config
 data:
-  RABBITMQ_DEFAULT_USER: "karim"
-  RABBITMQ_DEFAULT_PASS: "31233123"
+  REDIS_PASSWORD: "31233123"
 ---
 apiVersion: v1
 kind: Service
@@ -22,15 +21,15 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: live-mq
+  name: live-cache
   labels:
-    app: live-mq
+    app: live-cache
 spec:
   ports:
-    - port: 5672
-      targetPort: 5672
+    - port: 6379
+      targetPort: 6379
   selector:
-    app: live-mq
+    app: live-cache
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -38,7 +37,7 @@ metadata:
   name: live-play-deployment
   labels:
     tire: core
-    topic: mq
+    topic: live
 spec:
   selector:
     matchLabels:
@@ -62,26 +61,26 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: live-mq-deployment
+  name: live-cache-deployment
   labels:
     tire: core
-    topic: mq
+    topic: cache
 spec:
   selector:
     matchLabels:
-      app: live-mq
+      app: live-cache
   replicas: 1
   template:
     metadata:
       labels:
-        app: live-mq
+        app: live-cache
     spec:
       containers:
-        - name: live-mq
-          image: rabbitmq:3.8
+        - name: live-cache
+          image: bitnami/redis:6.2
           imagePullPolicy: Never
           ports:
-            - containerPort: 5762
+            - containerPort: 6379
           envFrom:
             - configMapRef:
-                name: live-mq-config
+                name: live-cache-config

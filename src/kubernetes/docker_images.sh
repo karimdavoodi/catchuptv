@@ -8,6 +8,7 @@ postgrest/postgrest \
 rabbitmq:3.8 \
 alpine:3.6 \
 kong:2.3 \
+bitnami/redis:6.2 \
 kong/kubernetes-ingress-controller:1.2 \
 docker.elastic.co/beats/filebeat:6.8.4 \
 docker.elastic.co/kibana/kibana-oss:6.8.4 \

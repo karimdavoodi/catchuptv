@@ -3,9 +3,7 @@ kind: ConfigMap
 metadata:
   name: fs-segment-config
 data:
-  MQ_CACHE_QUEUE: "segment"
-  MQ_CACHE_USER: "karim"
-  MQ_CACHE_PASS: "31233123"
+  LIVE_CACHE_PASS: "31233123"
 
   # For connect to Segment DB
   POSTGRES_HOST: "db-segment-postgres"
