@@ -6,12 +6,16 @@ import pika
 import json
 import time
 import psycopg2
+import traceback
 
-root = '/data/'
+root = '/data'
 gb_env = {}
 
 def eprint(*args, **kwargs):
         print(*args, file=sys.stderr, flush=True, **kwargs)
+
+def lprint():
+    eprint(traceback.format_exc())
 
 for var in ['GB_MQ_HOST', 'GB_MQ_USER', 'GB_MQ_PASS','GB_MQ_SEG_QUEUE', 
         'POSTGRES_HOST', 'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_DB',
@@ -41,24 +45,24 @@ def send_to_db(table, channel, sequence, start, duration, rtry = False):
                 f"({channel!r},{sequence},{start},{duration})")
         eprint(f"Try to run {insert}")
         db_cur.execute(insert)
-    except psycopg2.InterfaceError as err:
-        eprint('Error(0):' + str(err))
+    except psycopg2.InterfaceError:
+        lprint()
         db_connection()
         if rtry:
             send_to_db(channel, sequence, start, duration, True)
-    except psycopg2.ProgrammingError as err:
-        eprint('Error(1)' + str(err))
+    except psycopg2.ProgrammingError:
+        lprint()
         table_struct = ( f"create table {table} ("+
                 "ID        SERIAL PRIMARY KEY," +
                 "channel   varchar(127)," +
                 "sequence  int," +
                 "start     real," +
                 "duration  real)" )
-        db_cur.execute(insert)
+        db_cur.execute(table_struct)
         if rtry:
             send_to_db(channel, sequence, start, duration, True)
-    except Exception as err:
-        eprint('Error(3)' + str(err))
+    except:
+        lprint()
     eprint(f"Wrote to DB seq start {start}")
 
 def start_consuming():
@@ -70,13 +74,15 @@ def start_consuming():
                     gb_env['GB_MQ_HOST'], 5672, '/', credentials)
             connection = pika.BlockingConnection(parameters)
             channel_seg = connection.channel()
+            '''
             channel_seg.queue_declare(
                     queue=gb_env['GB_MQ_SEG_QUEUE'], 
                     passive=False, durable=True,  
                     exclusive=False, auto_delete=False)
+            '''
             break
-        except Exception as err:
-            eprint('Error(4)' + str(err))
+        except:
+            lprint()
             time.sleep(10)
     # Connect to CACHE_MQ
     while True:
@@ -87,17 +93,19 @@ def start_consuming():
                     5672, '/', credentials)
             connection = pika.BlockingConnection(parameters)
             channel_cache = connection.channel()
-            channel_cache.queue_declare(
-                    queue=gb_env['MQ_CACHE_QUEUE'], 
-                    passive=False, durable=True,  
-                    exclusive=False, auto_delete=False)
             break
-        except Exception as err:
-            eprint('Error(5)' + str(err))
+        except:
+            lprint()
             time.sleep(10)
     def callback(ch, method, properties, body):
         try:
-            info = json.loads(body[:255].decode())
+            try:
+                info_str = body[:255].decode()
+                info = json.loads(body[:255].decode())
+            except:
+                eprint('invalid json:', info_str)
+                raise
+
             channel = info['channel']
             sequence = info['sequence']
             start = info['start']
@@ -106,25 +114,31 @@ def start_consuming():
             
             # Send to CACHE Queue
             try:
+                channel_cache.queue_declare(
+                    queue=channel_table, 
+                    passive=False, durable=True,  
+                    exclusive=False, auto_delete=False,
+                    arguments={'x-message-ttl' : 60000})
                 channel_cache.basic_publish( exchange='', 
-                    routing_key=gb_env['MQ_CACHE_QUEUE'],
-                    body=body)
-                eprint(f"Send to CACHE mq seg start {start}")
-            except Exception as err:
-                eprint('Error(6)' + str(err))
+                    routing_key=channel_table, body=body)
+                eprint(f"Send to CACHE mq {channel_table} seg start {start}")
+            except:
+                lprint()
                 
             # Send to DB
             send_to_db(channel_table, channel, sequence, start, duration)
             
             # Save in File System
             tm = time.localtime(int(start))
-            seg_path = f"{channel_table}/{tm.tm_year}/{tm.tm_mon}/{tm.tm_mday}/{tm.tm_hour}"
-            file_path = f"/{root}/{seg_path}/{start}.ts"
+            seg_path = f"{root}/{channel_table}/{tm.tm_year}/{tm.tm_mon}/{tm.tm_mday}/{tm.tm_hour}"
+            if not os.path.exists(seg_path):
+                os.makedirs(seg_path, exist_ok=True)
+            file_path = f"{seg_path}/{start}.ts"
             with open(file_path, 'wb') as f:
                 f.write(body[255:])
                 eprint(f"Write on {file_path}")
-        except Exception as err:
-            eprint('Error(7)' + str(err))
+        except:
+            lprint()
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
     channel_seg.basic_qos(prefetch_count=1)
@@ -145,8 +159,8 @@ def db_connection():
             db_conn.autocommit = True
             db_cur = db_conn.cursor()
             break
-        except Exception as err:
-            eprint('Error(8)' + str(err))
+        except:
+            lprint()
             time.sleep(10)
     eprint(f"Connect to PostgreSQL host {gb_env['POSTGRES_HOST']}, db {gb_env['POSTGRES_DB']}")
 
@@ -156,6 +170,6 @@ if __name__ == '__main__':
             eprint("Start insert process")
             db_connection()
             start_consuming()
-        except Exception as err:
-            eprint('Error(9)', str(err))
+        except:
+            lprint()
         time.sleep(15)

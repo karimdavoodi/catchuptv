@@ -33,3 +33,20 @@ spec:
                 name: gb-config
             - configMapRef:
                 name: chan-net-to-epg-config
+      initContainers:
+        - name: wait-for-mq
+          image: busybox:1.28
+          imagePullPolicy: Never
+          command: ['sh', '-c', "until nslookup $GB_MQ_HOST; do echo \
+'Wait for gb-mq'; sleep 3; done"]
+          envFrom:
+            - configMapRef:
+                name: gb-config
+        - name: wait-for-epg-db
+          image: busybox:1.28
+          imagePullPolicy: Never
+          command: ['sh', '-c', "until nslookup $DB_EPG_HOST; do echo \
+'Wait for db-epg'; sleep 3; done"]
+          envFrom:
+            - configMapRef:
+                name: gb-config

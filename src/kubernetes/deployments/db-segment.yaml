@@ -102,10 +102,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: db-segment-config
-          volumeMounts:
-            - name: db-data
-              mountPath: /data
-      volumes:
-        - name: db-data
-          persistentVolumeClaim:
-            claimName: pvc-db-segment
+#          volumeMounts:
+#            - name: db-data
+#              mountPath: /data
+#      volumes:
+#        - name: db-data
+#          persistentVolumeClaim:
+#            claimName: pvc-db-segment

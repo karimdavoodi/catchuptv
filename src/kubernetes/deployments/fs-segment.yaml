@@ -88,7 +88,7 @@ spec:
                 name: gb-config
           volumeMounts:
             - name: seg-data
-              mountPath: /seg
+              mountPath: /data
       volumes:
         - name: seg-data
           persistentVolumeClaim:
@@ -96,7 +96,17 @@ spec:
       initContainers:
         - name: wait-for-mq
           image: busybox:1.28
-          command: ['sh', '-c', "until nslookup gb-mq; do echo 'Wait for gb-mq'; sleep 3; done"]
+          imagePullPolicy: Never
+          command: ['sh', '-c', "until nslookup $GB_MQ_HOST; do echo \
+'Wait for gb-mq'; sleep 3; done"]
+          envFrom:
+            - configMapRef:
+                name: gb-config
         - name: wait-for-live-mq
           image: busybox:1.28
-          command: ['sh', '-c', "until nslookup live-mq; do echo 'Wait for live-mq'; sleep 3; done"]
+          imagePullPolicy: Never
+          command: ['sh', '-c', "until nslookup $MQ_CACHE_HOST; do echo \
+'Wait for live-mq'; sleep 3; done"]
+          envFrom:
+            - configMapRef:
+                name: gb-config

@@ -12,7 +12,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: /data/db-epg
+    path: /tmp/data/db-epg
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -27,7 +27,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: /data/db-trim
+    path: /tmp/data/db-trim
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -42,7 +42,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: /data/db-segment
+    path: /tmp/data/db-segment
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -57,7 +57,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: /data/fs-segment
+    path: /tmp/data/fs-segment
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

@@ -107,21 +107,13 @@ spec:
           envFrom:
             - configMapRef:
                 name: db-epg-config
-          volumeMounts:
-            - name: db-data
-              mountPath: /data
-#           - name: init-db-sql
-#             mountPath: /docker-entrypoint-initdb.d
-      volumes:
-        - name: db-data
-          persistentVolumeClaim:
-            claimName: pvc-db-epg
-#        - name: init-db-sql
-#          configMap:
-#            name: db-epg-config
-#            items:
-#              - key: init.sql
-#                path: init.sql
+#          volumeMounts:
+#            - name: db-data
+#              mountPath: /data
+#      volumes:
+#        - name: db-data
+#          persistentVolumeClaim:
+#            claimName: pvc-db-epg
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -143,7 +135,7 @@ spec:
     spec:
       containers:
         - name: db-epg-insert
-          image: db-insert
+          image: epg-insert
           imagePullPolicy: Never
           envFrom:
             - configMapRef:
@@ -151,4 +143,9 @@ spec:
       initContainers:
         - name: wait-for-mq
           image: busybox:1.28
-          command: ['sh', '-c', "until nslookup gb-mq; do echo 'Wait for gb-mq'; sleep 3; done"]
+          imagePullPolicy: Never
+          command: ['sh', '-c', "until nslookup $GB_MQ_HOST; do echo \
+'Wait for gb-mq'; sleep 3; done"]
+          envFrom:
+            - configMapRef:
+                name: gb-config

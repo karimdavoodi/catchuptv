@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: live-mq-config
+data:
+  RABBITMQ_DEFAULT_USER: "karim"
+  RABBITMQ_DEFAULT_PASS: "31233123"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: live-play
+  labels:
+    app: live-play
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: live-play
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: live-mq
+  labels:
+    app: live-mq
+spec:
+  ports:
+    - port: 5672
+      targetPort: 5672
+  selector:
+    app: live-mq
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: live-play-deployment
+  labels:
+    tire: core
+    topic: mq
+spec:
+  selector:
+    matchLabels:
+      app: live-play
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: live-play
+    spec:
+      containers:
+        - name: live-play
+          image: live-play
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: gb-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: live-mq-deployment
+  labels:
+    tire: core
+    topic: mq
+spec:
+  selector:
+    matchLabels:
+      app: live-mq
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: live-mq
+    spec:
+      containers:
+        - name: live-mq
+          image: rabbitmq:3.8
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5762
+          envFrom:
+            - configMapRef:
+                name: live-mq-config

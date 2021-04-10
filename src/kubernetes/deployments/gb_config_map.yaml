@@ -10,9 +10,6 @@ data:
   GB_MQ_EPG_QUEUE: "epg"
   GB_MQ_SEG_QUEUE: "seg"
 
-  RABBITMQ_DEFAULT_USER: "karim"
-  RABBITMQ_DEFAULT_PASS: "31233123"
-
   GB_MQ_HOST: "gb-mq"
   DB_SEGMENT_HOST: "db-segment-postgres"
   DB_TRIM_HOST: "db-trim-postgres"

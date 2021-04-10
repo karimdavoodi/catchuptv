@@ -1,4 +1,12 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gb-mq-config
+data:
+  RABBITMQ_DEFAULT_USER: "karim"
+  RABBITMQ_DEFAULT_PASS: "31233123"
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: gb-mq
@@ -29,7 +37,6 @@ spec:
       labels:
         app: gb-mq
     spec:
-      restartPolicy: Always
       containers:
         - name: gb-mq
           image: rabbitmq:3.8
@@ -39,3 +46,5 @@ spec:
           envFrom:
             - configMapRef:
                 name: gb-config
+            - configMapRef:
+                name: gb-mq-config

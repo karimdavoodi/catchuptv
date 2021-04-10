@@ -5,11 +5,11 @@ metadata:
 data:
   CHANNEL_NAME: "test channel"
   CHANNEL_URL: "https://tv.razavi.ir/hls/rozeh_1.m3u8"
-  HLS_VIDEO_CODEC: "libx264"
+  HLS_VIDEO_CODEC: "copy"
   HLS_VIDEO_BITRATE: "2000k"
   HLS_VIDEO_SIZE: "1280x720"
   HLS_VIDEO_FPS: "25"
-  HLS_AUDIO_CODEC: "aac"
+  HLS_AUDIO_CODEC: "copy"
   HLS_AUDIO_BITRATE: "128k"
 
 ---
@@ -51,7 +51,17 @@ spec:
       initContainers:
         - name: wait-for-mq
           image: busybox:1.28
-          command: ['sh', '-c', "until nslookup gb-mq; do echo 'Wait for gb-mq'; sleep 3; done"]
+          imagePullPolicy: Never
+          command: ['sh', '-c', "until nslookup $GB_MQ_HOST; do echo \
+'Wait for gb-mq'; sleep 3; done"]
+          envFrom:
+            - configMapRef:
+                name: gb-config
         - name: wait-for-seg-db
           image: busybox:1.28
-          command: ['sh', '-c', "until nslookup db-segment-postgres; do echo 'Wait for db-segment-postgres'; sleep 3; done"]
+          imagePullPolicy: Never
+          command: ['sh', '-c', "until nslookup $DB_SEGMENT_HOST; do echo \
+'Wait for db-segment'; sleep 3; done"]
+          envFrom:
+            - configMapRef:
+                name: gb-config

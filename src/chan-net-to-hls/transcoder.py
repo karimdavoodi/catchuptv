@@ -4,6 +4,8 @@ import os
 import sys
 import time
 import pika
+import json
+import traceback
 import pyinotify
 from threading import Thread
 
@@ -13,6 +15,9 @@ channel_seg = None
 
 def eprint(*args, **kwargs):
         print(*args, file=sys.stderr, flush=True, **kwargs)
+
+def lprint():
+    eprint(traceback.format_exc())
 
 for var in [
         'GB_MQ_HOST', 
@@ -81,7 +86,7 @@ def send_seg_to_mq(info, file_path):
     global channel_seg
 
     with open(file_path, 'rb') as f:
-        merg = bytearray(str(info).encode())
+        merg = bytearray(json.dumps(info).encode())
         for i in range(255-len(merg)):
             merg.extend(' '.encode('latin-1'))
         merg.extend(f.read())
@@ -90,8 +95,8 @@ def send_seg_to_mq(info, file_path):
             channel_seg.basic_publish( exchange='', 
                 routing_key=gb_env['GB_MQ_SEG_QUEUE'],
                 body=merg)
-        except Exception as err:
-            eprint(str(err))
+        except:
+            lprint()
             eprint("Try to connect MQ again!")
             init_mq()
              
@@ -109,10 +114,12 @@ def init_mq():
                     passive=False, 
                     durable=True,  
                     exclusive=False, 
-                    auto_delete=False)
+                    auto_delete=False,
+                    arguments={'x-message-ttl' : 60000}
+                    )
             break
-        except Exception as err:
-            eprint(str(err))
+        except:
+            lprint()
             time.sleep(10)
 
     eprint('Connect to '+gb_env['GB_MQ_HOST'])
@@ -129,14 +136,14 @@ def watch_segments():
                 start = float(seg[1])
                 duration = float(seg[2][:-3]) / 1000000
                 info = {
-                    'channel': gb_env['CHANNEL_NAME'],
-                    'sequence': seq,
-                    'start': start,
-                    'duration': duration
+                    "channel": gb_env["CHANNEL_NAME"],
+                    "sequence": seq,
+                    "start": start,
+                    "duration": duration
                     }
                 send_seg_to_mq(info, event.pathname)
-        except Exception as err:
-            eprint(str(err))
+        except:
+            lprint()
     eprint(f"Watch to /hls")
     wm.add_watch('/hls', pyinotify.IN_MOVED_TO, callback)
     notifier.loop()
