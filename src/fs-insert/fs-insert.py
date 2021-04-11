@@ -29,13 +29,16 @@ for var in ['GB_MQ_HOST', 'GB_MQ_USER', 'GB_MQ_PASS','GB_MQ_SEG_QUEUE',
 
 def uniq_name(original_name):
     name = ""
-    for c in original_name:
-        if c >= 'a' and c<= 'z':
-            name += c.upper()
-        elif (c >= 'A' and c<= 'Z') or (c>='0' and c<='9'):
-            name += c
-        else:
-            name += '_'
+    try:
+        for c in original_name:
+            if c >= 'a' and c<= 'z':
+                name += c.upper()
+            elif (c >= 'A' and c<= 'Z') or (c>='0' and c<='9'):
+                name += c
+            else:
+                name += '_'
+    except:
+        lprint()
     return name
 
 def send_to_db(table, channel, sequence, start, duration, rtry = False):
@@ -46,12 +49,12 @@ def send_to_db(table, channel, sequence, start, duration, rtry = False):
                 f"({channel!r},{sequence},{start},{duration})")
         eprint(f"Try to run {insert}")
         db_cur.execute(insert)
-    except psycopg2.InterfaceError:
+    except psycopg2.InterfaceError:  # Connection problem!
         lprint()
         db_connection()
         if rtry:
             send_to_db(channel, sequence, start, duration, True)
-    except psycopg2.ProgrammingError:
+    except psycopg2.ProgrammingError: # Table not exists (maybe)
         lprint()
         table_struct = ( f"create table {table} ("+
                 "ID        SERIAL PRIMARY KEY," +
@@ -74,51 +77,52 @@ def connect_redis():
         except:
             lprint()
             time.sleep(10)
-
-def start_consuming():
-    # Connect to GB_MQ
+def connect_rabbitmq():
     while True:
         try:
             credentials = pika.PlainCredentials(gb_env['GB_MQ_USER'], gb_env['GB_MQ_PASS'])
             parameters = pika.ConnectionParameters(
                     gb_env['GB_MQ_HOST'], 5672, '/', credentials)
-            connection = pika.BlockingConnection(parameters)
-            channel_seg = connection.channel()
-            break
+            return pika.BlockingConnection(parameters)
         except:
             lprint()
             time.sleep(10)
-    # Connect to LIVE_CACHE
-    redis_con = connect_redis()
-    def callback(ch, method, properties, body):
-        try:
-            try:
-                info_str = body[:255].decode()
-                info = json.loads(info_str)
-            except:
-                eprint('invalid json:', info_str)
-                raise
 
+redis_con = None
+def start_consuming():
+    redis_con = connect_redis()
+    rabbitmq_con = connect_rabbitmq()
+    channel_seg = rabbitmq_con.channel()
+    def callback(ch, method, properties, body):
+        global redis_con
+        try:
+            info_str = body[:255].decode()
+            info = json.loads(info_str)
             channel = info['channel']
             sequence = info['sequence']
             start = info['start']
             duration = info['duration']
-            channel_table = uniq_name(channel)
+        except:
+            eprint('invalid json:', info_str)
+            raise
+
+        channel_table = uniq_name(channel)
+        
+        # Send Metadata to DB
+        send_to_db(channel_table, channel, sequence, start, duration)
+        
+        # Send to CACHE 
+        try:
+            redis_con.set(f"{channel_table}-seq-last",sequence)
+            redis_con.set(f"{channel_table}-{sequence}-data.ts",body[255:],100)
+            redis_con.set(f"{channel_table}-{sequence}-duration",duration,100)
+            eprint(f"Send to live cache {channel_table!r} seg seq {sequence}")
+        except:
+            lprint()
+            redis_con = connect_redis() #maybe disconnected
             
-            # Send to CACHE Queue
-            try:
-                redis_con.set(f"{channel}:seq:last",sequence)
-                redis_con.set(f"{channel}:{sequence}:data",body[255:],100)
-                redis_con.set(f"{channel}:{sequence}:duration",duration,100)
-                eprint(f"Send to live cache {channel} seg seq {sequence}")
-            except:
-                lprint()
-                redis_con = connect_redis()
-                
-            # Send to DB
-            send_to_db(channel_table, channel, sequence, start, duration)
-            
-            # Save in File System
+        # Save in File System
+        try:
             tm = time.localtime(int(start))
             seg_path = f"{root}/{channel_table}/{tm.tm_year}/{tm.tm_mon}/{tm.tm_mday}/{tm.tm_hour}"
             if not os.path.exists(seg_path):

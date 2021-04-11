@@ -97,8 +97,7 @@ def send_seg_to_mq(info, file_path):
                 body=merg)
         except:
             lprint()
-            eprint("Try to connect MQ again!")
-            init_mq()
+            init_mq() # maybe disconnected
              
 def init_mq():
     global channel_seg
@@ -121,7 +120,7 @@ def init_mq():
         except:
             lprint()
             time.sleep(10)
-
+    time.sleep(3)
     eprint('Connect to '+gb_env['GB_MQ_HOST'])
 
 def watch_segments():

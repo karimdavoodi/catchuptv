@@ -3,7 +3,9 @@ kind: ConfigMap
 metadata:
   name: live-cache-config
 data:
+  LIVE_CACHE_PASS: "31233123"
   REDIS_PASSWORD: "31233123"
+  REDIS_AOF_ENABLED: "no"
 ---
 apiVersion: v1
 kind: Service
@@ -13,8 +15,8 @@ metadata:
     app: live-play
 spec:
   ports:
-    - port: 3000
-      targetPort: 3000
+    - port: 80
+      targetPort: 80
   selector:
     app: live-play
 ---
@@ -57,6 +59,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: gb-config
+            - configMapRef:
+                name: live-cache-config
 ---
 apiVersion: apps/v1
 kind: Deployment

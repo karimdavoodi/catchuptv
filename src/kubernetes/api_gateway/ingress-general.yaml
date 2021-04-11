@@ -18,7 +18,7 @@ spec:
                 name: db-epg-postgrest
                 port:
                   number: 3000
-          - path: /trim-db
+          - path: /trim
             pathType: Prefix
             backend:
               service:
@@ -32,17 +32,17 @@ spec:
                 name: trim-jobs
                 port:
                   number: 3000
-          - path: /offline-play
+          - path: /offline
             pathType: Prefix
             backend:
               service:
                 name: offline-play
                 port:
-                  number: 3000
-          - path: /live-play
+                  number: 80
+          - path: /live
             pathType: Prefix
             backend:
               service:
                 name: live-play
                 port:
-                  number: 3000
+                  number: 80
