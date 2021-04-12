@@ -96,9 +96,11 @@ def start_consuming():
     def callback(ch, method, properties, body):
         global redis_con
         try:
-            info_str = body[:255].decode()
+            info_str = body[:512].decode()
             info = json.loads(info_str)
             channel = info['channel']
+            resolution = info['resolution']
+            bandwidth = info['bandwidth']
             sequence = info['sequence']
             start = info['start']
             duration = info['duration']
@@ -113,9 +115,12 @@ def start_consuming():
         
         # Send to CACHE 
         try:
-            redis_con.set(f"{channel_table}-seq-last",sequence)
-            redis_con.set(f"{channel_table}-{sequence}-data.ts",body[255:],100)
-            redis_con.set(f"{channel_table}-{sequence}-duration",duration,100)
+            channels_bandwidth = f"{channel_table}-{bandwidth}"
+            redis_con.sadd(f"{channel_table}-set", f"{bandwidth:resolution}")
+
+            redis_con.set(f"{channels_bandwidth}-seq-last",sequence)
+            redis_con.set(f"{channels_bandwidth}-{sequence}-data.ts",body[512:],100)
+            redis_con.set(f"{channels_bandwidth}-{sequence}-duration",duration,100)
             eprint(f"Send to live cache {channel_table!r} seg seq {sequence}")
         except:
             lprint()
@@ -129,7 +134,7 @@ def start_consuming():
                 os.makedirs(seg_path, exist_ok=True)
             file_path = f"{seg_path}/{start}.ts"
             with open(file_path, 'wb') as f:
-                f.write(body[255:])
+                f.write(body[512:])
                 eprint(f"Write on {file_path}")
         except:
             lprint()

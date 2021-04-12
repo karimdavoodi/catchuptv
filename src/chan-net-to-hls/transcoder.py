@@ -24,6 +24,7 @@ for var in [
         'GB_MQ_USER', 
         'GB_MQ_PASS', 
         'CHANNEL_NAME',
+        'CHANNEL_BANDWIDTH',
         'CHANNEL_URL',
         'HLS_VIDEO_CODEC',
         'HLS_VIDEO_BITRATE',
@@ -87,7 +88,7 @@ def send_seg_to_mq(info, file_path):
 
     with open(file_path, 'rb') as f:
         merg = bytearray(json.dumps(info).encode())
-        for i in range(255-len(merg)):
+        for i in range(512-len(merg)):
             merg.extend(' '.encode('latin-1'))
         merg.extend(f.read())
         eprint(f"Try to send data to MQ by len:{len(merg)}")
@@ -136,6 +137,8 @@ def watch_segments():
                 duration = float(seg[2][:-3]) / 1000000
                 info = {
                     "channel": gb_env["CHANNEL_NAME"],
+                    "bandwidth": gb_env['CHANNEL_BANDWIDTH'],
+                    "resolution": gb_env['HLS_VIDEO_SIZE'],
                     "sequence": seq,
                     "start": start,
                     "duration": duration

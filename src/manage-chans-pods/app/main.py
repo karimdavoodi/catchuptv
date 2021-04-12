@@ -57,36 +57,18 @@ def read_root():
     return {"Hello": "World"}
 
 @app.get("/live/play.m3u8")
-def live_playlist(channel:str = "", bandwidth : Optional(str) = "" ):
+def live_playlist(channel:str = ""):
     global redis_con
     last = "0"
-    chan_num = 0
     channel = uniq_name(channel)
     try:
-        chan_num = int(redis_con.scard(f'{channel}-set')) 
+        last = redis_con.get(f'{channel}-seq-last')
+        if not last: 
+            return f"Channel {channel!r} not found\n"
     except:
         lprint()
         redis_con = connect_redis()
-    
-    if chan_num == 0: 
-        return f"Channel {channel!r} not found\n"
-    if bandwidth == "":
-        # Serve Master playlist
-        master_play_list = "#EXTM3U\n#EXT-X-VERSION:3\n"
 
-        for item in redis_con.smembers(f'{channel}-set'): 
-            tok = str(item.decode()).split(':')
-            bandwidth = tok[0]
-            resolution = tok[1]
-            master_play_list += (f'#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH={bandwidth},'+
-                    f'RESOLUTION={resolution!r}\n' +
-                    f'/live/play.m3u8?channel={channel}&bandwidth={bandwidth}\n' )
-            return Response(content=master_play_list, media_type="application/x-mpegURL")
-
-    channels_bandwidth = f"{channel}-{bandwidth}"
-    last = redis_con.get(f'{channels_bandwidth}-seq-last')
-    if not last: 
-        return f"Channel {channel!r} not found\n"
     last = int(last)
     first = 0 if last < 4 else last-3
     playlist = ("#EXTM3U\n" +
@@ -95,7 +77,7 @@ def live_playlist(channel:str = "", bandwidth : Optional(str) = "" ):
                 "#EXT-X-MEDIA-SEQUENCE:%d\n" % first +
                 "#EXT-X-TARGETDURATION:20\n\n" )
     for i in range(first, last):
-        duration = str(redis_con.get(f'{channel}-{i}-duration').decode())
+        duration = redis_con.get(f'{channel}-{i}-duration').decode()
         playlist += f"#EXTINF:{duration},\n" 
         playlist += f"/live/segment/{channel}-{i}-data.ts\n"
 
