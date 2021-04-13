@@ -57,7 +57,7 @@ def read_root():
     return {"Hello": "World"}
 
 @app.get("/live/play.m3u8")
-def live_playlist(channel:str = "", bandwidth : Optional(str) = "" ):
+def live_playlist(channel:str = "", bandwidth : Optional[str] = "" ):
     global redis_con
     last = "0"
     chan_num = 0
@@ -69,7 +69,7 @@ def live_playlist(channel:str = "", bandwidth : Optional(str) = "" ):
         redis_con = connect_redis()
     
     if chan_num == 0: 
-        return f"Channel {channel!r} not found\n"
+        return f"Channel {channel!r} not found(1)\n"
     if bandwidth == "":
         # Serve Master playlist
         master_play_list = "#EXTM3U\n#EXT-X-VERSION:3\n"
@@ -81,12 +81,12 @@ def live_playlist(channel:str = "", bandwidth : Optional(str) = "" ):
             master_play_list += (f'#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH={bandwidth},'+
                     f'RESOLUTION={resolution!r}\n' +
                     f'/live/play.m3u8?channel={channel}&bandwidth={bandwidth}\n' )
-            return Response(content=master_play_list, media_type="application/x-mpegURL")
+        return Response(content=master_play_list, media_type="application/x-mpegURL")
 
-    channels_bandwidth = f"{channel}-{bandwidth}"
-    last = redis_con.get(f'{channels_bandwidth}-seq-last')
+    channel_bandwidth = f"{channel}-{bandwidth}"
+    last = redis_con.get(f'{channel_bandwidth}-seq-last')
     if not last: 
-        return f"Channel {channel!r} not found\n"
+        return f"Channel {channel!r} not found(2)\n"
     last = int(last)
     first = 0 if last < 4 else last-3
     playlist = ("#EXTM3U\n" +
@@ -95,9 +95,9 @@ def live_playlist(channel:str = "", bandwidth : Optional(str) = "" ):
                 "#EXT-X-MEDIA-SEQUENCE:%d\n" % first +
                 "#EXT-X-TARGETDURATION:20\n\n" )
     for i in range(first, last):
-        duration = str(redis_con.get(f'{channel}-{i}-duration').decode())
+        duration = str(redis_con.get(f'{channel_bandwidth}-{i}-duration').decode())
         playlist += f"#EXTINF:{duration},\n" 
-        playlist += f"/live/segment/{channel}-{i}-data.ts\n"
+        playlist += f"/live/segment/{channel_bandwidth}-{i}-data.ts\n"
 
     return Response(content=playlist, media_type="application/x-mpegURL")
  

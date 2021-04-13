@@ -108,20 +108,20 @@ def start_consuming():
             eprint('invalid json:', info_str)
             raise
 
-        channel_table = uniq_name(channel)
+        channel_uniq = uniq_name(channel)
         
         # Send Metadata to DB
-        send_to_db(channel_table, channel, sequence, start, duration)
+        send_to_db(channel_uniq, channel, sequence, start, duration)
         
         # Send to CACHE 
         try:
-            channels_bandwidth = f"{channel_table}-{bandwidth}"
-            redis_con.sadd(f"{channel_table}-set", f"{bandwidth:resolution}")
+            redis_con.sadd(f"{channel_uniq}-set", f"{bandwidth:resolution}")
 
-            redis_con.set(f"{channels_bandwidth}-seq-last",sequence)
-            redis_con.set(f"{channels_bandwidth}-{sequence}-data.ts",body[512:],100)
-            redis_con.set(f"{channels_bandwidth}-{sequence}-duration",duration,100)
-            eprint(f"Send to live cache {channel_table!r} seg seq {sequence}")
+            channel_bandwidth = f"{channel_uniq}-{bandwidth}"
+            redis_con.set(f"{channel_bandwidth}-seq-last",sequence)
+            redis_con.set(f"{channel_bandwidth}-{sequence}-data.ts",body[512:],100)
+            redis_con.set(f"{channel_bandwidth}-{sequence}-duration",duration,100)
+            eprint(f"Send to live cache {channel_uniq!r} seg seq {sequence}")
         except:
             lprint()
             redis_con = connect_redis() #maybe disconnected
@@ -129,7 +129,7 @@ def start_consuming():
         # Save in File System
         try:
             tm = time.localtime(int(start))
-            seg_path = f"{root}/{channel_table}/{tm.tm_year}/{tm.tm_mon}/{tm.tm_mday}/{tm.tm_hour}"
+            seg_path = f"{root}/{channel_uniq}/{tm.tm_year}/{tm.tm_mon}/{tm.tm_mday}/{tm.tm_hour}"
             if not os.path.exists(seg_path):
                 os.makedirs(seg_path, exist_ok=True)
             file_path = f"{seg_path}/{start}.ts"
