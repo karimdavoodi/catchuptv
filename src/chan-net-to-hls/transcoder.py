@@ -47,10 +47,7 @@ def time_to_stop():
         now = time.localtime()
         now_s  = now.tm_hour*3600 + now.tm_min*60 + now.tm_sec
         stop_s  = stop.tm_hour*3600 + stop.tm_min*60 + stop.tm_sec
-        if now_s < stop_s: 
-            diff = stop_s - now_s
-        else:
-            diff = 86400 - now_s
+        diff = stop_s - now_s if now_s < stop_s else 86400 - now_s
         eprint(f"Wait {diff} second to stop")
         return diff
     except:
@@ -63,8 +60,7 @@ def time_to_start():
         now = time.localtime()
         now_s  = now.tm_hour*3600 + now.tm_min*60 + now.tm_sec
         start_s  = start.tm_hour*3600 + start.tm_min*60 + start.tm_sec
-        if now_s < start_s: 
-            diff = start_s - now_s
+        diff = 0 if now_s > start_s else start_s - now_s
         eprint(f"Wait {diff} second to start")
         return diff
     except:
@@ -100,7 +96,7 @@ def start_ffmpeg_thread():
             "-strftime 1 -hls_segment_filename \"/hls/%%d_%s_%%t.ts\" " \
             "-f hls /hls/p.m3u8"
     is_live = True if gb_env['CHANNEL_LIVE'].lower() == 'true' else False
-    cmd = "ffmpeg -v quiet "
+    cmd = "ffmpeg "
     if not is_live:
         eprint('channel is VOD, run in play time(-re)')
         cmd += '-re '
