@@ -1,1 +1,0 @@
-input -> chan_net_to_epg -> mq -> epg_serv
