@@ -4,12 +4,15 @@
 # https://moctobpltc-i.akamaihd.net/hls/live/571329/eight/playlist.m3u8
 # http://download.tsi.telecom-paristech.fr/gpac/DASH_CONFORMANCE/TelecomParisTech/mp4-live/mp4-live-mpd-AV-NBS.mpd
 
-if [ "$#" != "16" ]; then
-    echo -e "Add new chan-net-to-hls\n"
+if [ "$#" != "24" ]; then
+    echo -e "Add new chan-net-to-hls $# \n"
     echo -e "Usage: $0 \n"\
             "-c|--channel           <channel_name>\n"\
             "-w|--channel-bandwith  <channel_name>\n"\
             "-u|--channel-url       <channel_url>\n"\
+            "-l|--channel-live      <true|false>\n"\
+            "-r|--channel-start     <'hh:mm'>\n"\
+            "-o|--channel-stop      <'hh:mm'>\n"\
             "-v|--video-codec       <video_codec>\n" \
             "-s|--video-size        <video_size>\n" \
             "-f|--video-fps         <video_fps>\n" \
@@ -25,8 +28,20 @@ while [[ $# -gt 0 ]]; do
 			CHANNEL_NAME="$2"
 			shift;shift 
 			;;
-		-u|--url)
+		-u|--channel-url)
 			CHANNEL_URL="$2"
+			shift;shift 
+			;;
+		-l|--channel-live)
+			CHANNEL_LIVE="$2"
+			shift;shift 
+			;;
+		-r|--channel-start)
+			CHANNEL_DAILY_START="$2"
+			shift;shift 
+			;;
+		-o|--channel-stop)
+			CHANNEL_DAILY_STOP="$2"
 			shift;shift 
 			;;
 		-w|--channel-bandwith)
@@ -62,17 +77,21 @@ while [[ $# -gt 0 ]]; do
 			;;
 	esac
 done
+rm -f /tmp/chan.yaml
 cp -f ./deployments/chan-net-to-hls.yaml /tmp/chan.yaml
 sed -i "s/CHANNEL_NAME:.*/CHANNEL_NAME: \"$CHANNEL_NAME\"/" /tmp/chan.yaml 
 sed -i "s/CHANNEL_BANDWIDTH:.*/CHANNEL_BANDWIDTH: \"$CHANNEL_BANDWIDTH\"/" /tmp/chan.yaml 
 sed -i "s/CHANNEL_URL:.*/CHANNEL_URL: \"$CHANNEL_URL\"/" /tmp/chan.yaml 
+sed -i "s/CHANNEL_LIVE:.*/CHANNEL_LIVE: \"$CHANNEL_LIVE\"/" /tmp/chan.yaml 
+sed -i "s/CHANNEL_DAILY_START:.*/CHANNEL_DAILY_START: \"$CHANNEL_DAILY_START\"/" /tmp/chan.yaml 
+sed -i "s/CHANNEL_DAILY_STOP:.*/CHANNEL_DAILY_STOP: \"$CHANNEL_DAILY_STOP\"/" /tmp/chan.yaml 
 sed -i "s/HLS_VIDEO_CODEC:.*/HLS_VIDEO_CODEC: \"$HLS_VIDEO_CODEC\"/" /tmp/chan.yaml 
 sed -i "s/HLS_VIDEO_SIZE:.*/HLS_VIDEO_SIZE: \"$HLS_VIDEO_SIZE\"/" /tmp/chan.yaml 
 sed -i "s/HLS_VIDEO_FPS:.*/HLS_VIDEO_FPS: \"$HLS_VIDEO_FPS\"/" /tmp/chan.yaml 
 sed -i "s/HLS_VIDEO_BITRATE:.*/HLS_VIDEO_BITRATE: \"$HLS_VIDEO_BITRATE\"/" /tmp/chan.yaml 
 sed -i "s/HLS_AUDIO_BITRATE:.*/HLS_AUDIO_BITRATE: \"$HLS_AUDIO_BITRATE\"/" /tmp/chan.yaml 
 sed -i "s/HLS_AUDIO_CODEC:.*/HLS_AUDIO_CODEC: \"$HLS_AUDIO_CODEC\"/" /tmp/chan.yaml 
-ID=`echo $CHANNEL_NAME | md5sum | cut -b-10`
+ID=`echo $CHANNEL_NAME $CHANNEL_BANDWIDTH  | md5sum | cut -b-10`
 
 sed -i "s/chan-net-to-hls-config/chan-net-to-hls-config-$ID/" /tmp/chan.yaml 
 sed -i "s/chan-net-to-hls-dep/chan-net-to-hls-dep-$ID/" /tmp/chan.yaml 

@@ -1,0 +1,103 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-channel-config
+data:
+
+  # For PostgreSQL
+  MONGO_INITDB_ROOT_USERNAME: "mongodb"
+  MONGO_INITDB_ROOT_PASSWORD: "31233123"
+  MONGO_INITDB_DATABASE: "restheart"
+  MONGO_URI: "mongodb://mongodb:31233123@db-channel-mongodb"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-channel-api
+  labels:
+    app: db-channel-api
+    topic: channel
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: db-channel-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-channel-mongodb
+  labels:
+    app: db-channel-mongodb
+    topic: channel
+spec:
+  ports:
+    - port: 27017
+      targetPort: 27017
+  selector:
+    app: db-channel-mongodb
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-channel-api-dep
+  labels:
+    tire: core
+    topic: channel
+spec:
+  selector:
+    matchLabels:
+      app: db-channel-api
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: db-channel-api
+        topic: channel
+    spec:
+      containers:
+        - name: db-channel-api
+          image: softinstigate/restheart
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: db-channel-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-channel-mongodb-dep
+  labels:
+    tire: core
+    topic: channel
+spec:
+  selector:
+    matchLabels:
+      app: db-channel-mongodb
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: db-channel-mongodb
+        topic: channel
+    spec:
+      containers:
+        - name: db-channel-mongodb
+          image: mongo:4.4
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 27017
+          envFrom:
+            - configMapRef:
+                name: db-channel-config
+#          volumeMounts:
+#            - name: db-data
+#              mountPath: /data/
+#      volumes:
+#        - name: db-data
+#          persistentVolumeClaim:
+#            claimName: pvc-db-channel

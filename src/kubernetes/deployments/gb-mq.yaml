@@ -48,3 +48,6 @@ spec:
                 name: gb-config
             - configMapRef:
                 name: gb-mq-config
+          resources:
+            limits:
+              memory: "1000Mi"

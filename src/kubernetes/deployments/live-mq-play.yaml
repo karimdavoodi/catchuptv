@@ -88,3 +88,6 @@ spec:
           envFrom:
             - configMapRef:
                 name: live-cache-config
+          resources:
+            limits:
+              memory: "1000Mi"

@@ -22,16 +22,16 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: db-segment-postgrest
+  name: db-segment-api
   labels:
-    app: db-segment-postgrest
+    app: db-segment-api
     topic: segment
 spec:
   ports:
     - port: 3000
       targetPort: 3000
   selector:
-    app: db-segment-postgrest
+    app: db-segment-api
 ---
 apiVersion: v1
 kind: Service
@@ -50,23 +50,23 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: db-segment-postgrest-dep
+  name: db-segment-api-dep
   labels:
     tire: core
     topic: segment
 spec:
   selector:
     matchLabels:
-      app: db-segment-postgrest
+      app: db-segment-api
   replicas: 1
   template:
     metadata:
       labels:
-        app: db-segment-postgrest
+        app: db-segment-api
         topic: segment
     spec:
       containers:
-        - name: db-segment-postgrest
+        - name: db-segment-api
           image: postgrest/postgrest
           imagePullPolicy: Never
           ports:

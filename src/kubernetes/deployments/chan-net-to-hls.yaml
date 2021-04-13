@@ -4,8 +4,11 @@ metadata:
   name: chan-net-to-hls-config
 data:
   CHANNEL_NAME: "test channel"
-  CHANNEL_BANDWIDTH: "2000000"   # for use in Adaptive bit rate
+  CHANNEL_LIVE: "true"
+  CHANNEL_DAILY_START: "00:00"
+  CHANNEL_DAILY_STOP: "24:00"
   CHANNEL_URL: "https://tv.razavi.ir/hls/rozeh_1.m3u8"
+  CHANNEL_BANDWIDTH: "2000000"
   HLS_VIDEO_CODEC: "copy"
   HLS_VIDEO_BITRATE: "2000k"
   HLS_VIDEO_SIZE: "1280x720"

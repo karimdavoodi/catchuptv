@@ -22,16 +22,16 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: db-trim-postgrest
+  name: db-trim-api
   labels:
-    app: db-trim-postgrest
+    app: db-trim-api
     topic: trim
 spec:
   ports:
     - port: 3000
       targetPort: 3000
   selector:
-    app: db-trim-postgrest
+    app: db-trim-api
 ---
 apiVersion: v1
 kind: Service
@@ -50,23 +50,23 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: db-trim-postgrest-dep
+  name: db-trim-api-dep
   labels:
     tire: core
     topic: trim
 spec:
   selector:
     matchLabels:
-      app: db-trim-postgrest
+      app: db-trim-api
   replicas: 1
   template:
     metadata:
       labels:
-        app: db-trim-postgrest
+        app: db-trim-api
         topic: trim
     spec:
       containers:
-        - name: db-trim-postgrest
+        - name: db-trim-api
           image: postgrest/postgrest
           imagePullPolicy: Never
           ports:

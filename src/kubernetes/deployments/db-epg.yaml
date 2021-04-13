@@ -27,16 +27,16 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: db-epg-postgrest
+  name: db-epg-api
   labels:
-    app: db-epg-postgrest
+    app: db-epg-api
     topic: epg
 spec:
   ports:
     - port: 3000
       targetPort: 3000
   selector:
-    app: db-epg-postgrest
+    app: db-epg-api
 ---
 apiVersion: v1
 kind: Service
@@ -55,23 +55,23 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: db-epg-postgrest-dep
+  name: db-epg-api-dep
   labels:
     tire: core
     topic: epg
 spec:
   selector:
     matchLabels:
-      app: db-epg-postgrest
+      app: db-epg-api
   replicas: 1
   template:
     metadata:
       labels:
-        app: db-epg-postgrest
+        app: db-epg-api
         topic: epg
     spec:
       containers:
-        - name: db-epg-postgrest
+        - name: db-epg-api
           image: postgrest/postgrest
           imagePullPolicy: Never
           ports:
