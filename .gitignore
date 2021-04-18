@@ -1,0 +1,9 @@
+build/
+tmp/
+.clangd/
+CMakeFiles/
+CMakeCache.txt
+.mypy_cache/
+*.tar
+*.tgz
+*.o

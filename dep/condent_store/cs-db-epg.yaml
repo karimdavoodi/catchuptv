@@ -1,0 +1,151 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cs-db-epg-config
+data:
+  GB_MQ_HOST: "cs-gb-mq"
+  # TODO: MOVE  TO SECRET
+  GB_MQ_USER: "karim"
+  GB_MQ_PASS: "31233123"
+  GB_MQ_EPG_QUEUE: "epg"
+
+  # For PostgreSQL
+  POSTGRES_HOST: "cs-db-epg-postgres"
+  POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "31233123"
+  POSTGRES_DB: "postgres"
+  PGDATA: "/data"
+
+  PGRST_DB_URI: "postgres://postgres:31233123@cs-db-epg-postgres:5432/postgres"
+  PGRST_DB_SCHEMA: "public"
+  PGRST_DB_ANON_ROLE: "postgres"
+
+  init.sql: |
+    CREATE DATABASE epg;
+    GRANT ALL PRIVILEGES ON DATABASE epg TO postgres;
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-db-epg-api
+  labels:
+    app: cs-db-epg-api
+    topic: epg
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: cs-db-epg-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-db-epg-postgres
+  labels:
+    app: cs-db-epg-postgres
+    topic: epg
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app: cs-db-epg-postgres
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cs-db-epg-api-dep
+  labels:
+    tire: core
+    topic: epg
+spec:
+  selector:
+    matchLabels:
+      app: cs-db-epg-api
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cs-db-epg-api
+        topic: epg
+    spec:
+      containers:
+        - name: cs-db-epg-api
+          image: postgrest/postgrest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: cs-db-epg-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cs-db-epg-postgres-dep
+  labels:
+    tire: core
+    topic: epg
+spec:
+  selector:
+    matchLabels:
+      app: cs-db-epg-postgres
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cs-db-epg-postgres
+        topic: epg
+    spec:
+      containers:
+        - name: cs-db-epg-postgres
+          image: postgres:13.2
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: cs-db-epg-config
+#          volumeMounts:
+#            - name: db-data
+#              mountPath: /data
+#      volumes:
+#        - name: db-data
+#          persistentVolumeClaim:
+#            claimName: pvc-cs-db-epg
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cs-db-epg-insert-dep
+  labels:
+    tire: core
+    topic: epg
+spec:
+  selector:
+    matchLabels:
+      app: cs-db-epg-insert
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cs-db-epg-insert
+        topic: epg
+    spec:
+      containers:
+        - name: cs-db-epg-insert
+          image: epg-insert
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: cs-db-epg-config
+      initContainers:
+        - name: wait-for-mq
+          image: busybox:1.28
+          imagePullPolicy: Never
+          command: ['sh', '-c', "until nslookup $GB_MQ_HOST; do echo \
+'Wait for cs-gb-mq'; sleep 3; done"]
+          envFrom:
+            - configMapRef:
+                name: cs-gb-config

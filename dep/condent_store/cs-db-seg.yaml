@@ -1,0 +1,111 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cs-db-seg-config
+data:
+
+  # For PostgreSQL
+  POSTGRES_HOST: "cs-db-seg-postgres"
+  POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "31233123"
+  POSTGRES_DB: "postgres"
+  PGDATA: "/data"
+
+  PGRST_DB_URI: "postgres://postgres:31233123@cs-db-seg-postgres:5432/postgres"
+  PGRST_DB_SCHEMA: "public"
+  PGRST_DB_ANON_ROLE: "postgres"
+
+  init.sql: |
+    CREATE DATABASE segment;
+    GRANT ALL PRIVILEGES ON DATABASE segment TO postgres;
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-db-seg-api
+  labels:
+    app: cs-db-seg-api
+    topic: segment
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: cs-db-seg-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-db-seg-postgres
+  labels:
+    app: cs-db-seg-postgres
+    topic: segment
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app: cs-db-seg-postgres
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cs-db-seg-api-dep
+  labels:
+    tire: core
+    topic: segment
+spec:
+  selector:
+    matchLabels:
+      app: cs-db-seg-api
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cs-db-seg-api
+        topic: segment
+    spec:
+      containers:
+        - name: cs-db-seg-api
+          image: postgrest/postgrest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: cs-db-seg-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cs-db-seg-postgres-dep
+  labels:
+    tire: core
+    topic: segment
+spec:
+  selector:
+    matchLabels:
+      app: cs-db-seg-postgres
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cs-db-seg-postgres
+        topic: segment
+    spec:
+      containers:
+        - name: cs-db-seg-postgres
+          image: postgres:13.2
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: cs-db-seg-config
+#          volumeMounts:
+#            - name: db-data
+#              mountPath: /data
+#      volumes:
+#        - name: db-data
+#          persistentVolumeClaim:
+#            claimName: pvc-cs-db-seg

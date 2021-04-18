@@ -1,0 +1,48 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-generel
+  annotations:
+    kubernetes.io/ingress.class: kong
+    # For ACL plugin
+    #konghq.com/plugins: app-jwt
+    #konghq.com/strip-path: "false"
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /epg
+            pathType: Prefix
+            backend:
+              service:
+                name: db-epg-postgrest
+                port:
+                  number: 3000
+          - path: /trim
+            pathType: Prefix
+            backend:
+              service:
+                name: db-trim-postgrest
+                port:
+                  number: 3000
+          - path: /trim-jobs
+            pathType: Prefix
+            backend:
+              service:
+                name: trim-jobs
+                port:
+                  number: 3000
+          - path: /offline
+            pathType: Prefix
+            backend:
+              service:
+                name: cs-offline-play
+                port:
+                  number: 80
+          - path: /live
+            pathType: Prefix
+            backend:
+              service:
+                name: cs-live-cache-play
+                port:
+                  number: 80

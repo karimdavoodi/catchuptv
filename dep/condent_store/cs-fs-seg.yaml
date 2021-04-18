@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cs-fs-seg-config
+data:
+  LIVE_CACHE_PASS: "31233123"
+
+  # For connect to Segment DB
+  POSTGRES_HOST: "cs-db-seg-postgres"
+  POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "31233123"
+  POSTGRES_DB: "postgres"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-fs-seg-nginx
+  labels:
+    app: cs-fs-seg-nginx
+    topic: segment
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    app: cs-fs-seg-nginx
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cs-fs-seg-nginx-dep
+  labels:
+    tire: core
+    topic: segment
+spec:
+  selector:
+    matchLabels:
+      app: cs-fs-seg-nginx
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cs-fs-seg-nginx
+        topic: segment
+    spec:
+      volumes:
+        - name: seg-data
+          persistentVolumeClaim:
+            claimName: pvc-cs-fs-seg
+      containers:
+        - name: cs-fs-seg-nginx
+          image: nginx:1.19
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: seg-data
+              mountPath: /usr/share/nginx/html
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cs-mq-to-fs-db-cache-dep
+  labels:
+    tire: core
+    topic: segment
+spec:
+  selector:
+    matchLabels:
+      app: cs-mq-to-fs-db-cache
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cs-mq-to-fs-db-cache
+        topic: segment
+    spec:
+      containers:
+        - name: cs-mq-to-fs-db-cache
+          image: cs-mq-to-fs-db-cache
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: cs-fs-seg-config
+            - configMapRef:
+                name: cs-gb-config
+          volumeMounts:
+            - name: seg-data
+              mountPath: /data
+      volumes:
+        - name: seg-data
+          persistentVolumeClaim:
+            claimName: pvc-cs-fs-seg
+      initContainers:
+        - name: wait-for-mq
+          image: busybox:1.28
+          imagePullPolicy: Never
+          command: ['sh', '-c', "until nslookup $GB_MQ_HOST; do echo \
+'Wait for gb-mq'; sleep 3; done"]
+          envFrom:
+            - configMapRef:
+                name: cs-gb-config
+        - name: wait-for-live-mq
+          image: busybox:1.28
+          imagePullPolicy: Never
+          command: ['sh', '-c', "until nslookup $LIVE_CACHE_HOST; do echo \
+'Wait for live-mq'; sleep 3; done"]
+          envFrom:
+            - configMapRef:
+                name: cs-gb-config

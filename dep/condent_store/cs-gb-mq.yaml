@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cs-gb-mq-config
+data:
+  RABBITMQ_DEFAULT_USER: "karim"
+  RABBITMQ_DEFAULT_PASS: "31233123"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-gb-mq
+  labels:
+    app: cs-gb-mq
+spec:
+  ports:
+    - port: 5672
+      targetPort: 5672
+  selector:
+    app: cs-gb-mq
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cs-gb-mq-deployment
+  labels:
+    tire: core
+    topic: mq
+spec:
+  selector:
+    matchLabels:
+      app: cs-gb-mq
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cs-gb-mq
+    spec:
+      containers:
+        - name: cs-gb-mq
+          image: rabbitmq:3.8
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5762
+          envFrom:
+            - configMapRef:
+                name: cs-gb-config
+            - configMapRef:
+                name: cs-gb-mq-config
+          resources:
+            limits:
+              memory: "1000Mi"

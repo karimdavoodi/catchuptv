@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cs-gb-config
+data:
+  DEBUG_LEVEL: "5"
+  # TODO: MOVE TO SECRET
+  GB_MQ_USER: "karim"
+  GB_MQ_PASS: "31233123"
+  GB_MQ_EPG_QUEUE: "epg"
+  GB_MQ_SEG_QUEUE: "seg"
+
+  GB_MQ_HOST: "cs-gb-mq"
+  DB_SEGMENT_HOST: "cs-db-seg-postgres"
+  DB_TRIM_HOST: "cs-db-trim-postgres"
+  DB_EPG_HOST: "cs-db-epg-postgres"
+  LIVE_CACHE_HOST: "cs-live-cache"
