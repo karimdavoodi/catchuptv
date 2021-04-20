@@ -11,7 +11,7 @@ data:
   GB_MQ_SEG_QUEUE: "seg"
 
   GB_MQ_HOST: "cs-gb-mq"
-  DB_SEGMENT_HOST: "cs-db-seg-postgres"
-  DB_TRIM_HOST: "cs-db-trim-postgres"
-  DB_EPG_HOST: "cs-db-epg-postgres"
+  DB_SEGMENT_HOST: "cs-db-seg"
+  DB_TRIM_HOST: "cs-db-trim"
+  DB_EPG_HOST: "cs-db-epg"
   LIVE_CACHE_HOST: "cs-live-cache"

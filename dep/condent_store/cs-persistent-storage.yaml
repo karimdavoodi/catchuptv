@@ -62,7 +62,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: pvc-cs-db-epg
+  name: cs-pvc-db-epg
 spec:
   storageClassName: cs-vol-db-epg
   accessModes:
@@ -74,7 +74,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: pvc-cs-db-trim
+  name: cs-pvc-db-trim
 spec:
   storageClassName: cs-vol-db-trim
   accessModes:
@@ -86,7 +86,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: pvc-cs-db-seg
+  name: cs-pvc-db-seg
 spec:
   storageClassName: cs-vol-db-segment
   accessModes:
@@ -98,7 +98,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: pvc-cs-fs-seg
+  name: cs-pvc-fs-seg
 spec:
   storageClassName: cs-vol-fs-segment
   accessModes:

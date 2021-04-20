@@ -19,6 +19,7 @@ gb_env = util.get_env([
         'CHANNEL_DAILY_START',
         'CHANNEL_DAILY_STOP',
         'HLS_VIDEO_CODEC',
+        'HLS_VIDEO_BITRATE',
         'HLS_VIDEO_SIZE',
         'HLS_VIDEO_FPS',
         'HLS_AUDIO_CODEC',
@@ -84,8 +85,8 @@ def start_ffmpeg_thread():
         codec = '-vcodec ' + gb_env['HLS_VIDEO_CODEC']
         size = '-s ' + gb_env['HLS_VIDEO_SIZE'] \
                 if len(gb_env['HLS_VIDEO_SIZE'])>1 else ''
-        bitrate = '-b:v ' + gb_env['CHANNEL_BANDWIDTH'] \
-                if len(gb_env['CHANNEL_BANDWIDTH'])>1 else ''
+        bitrate = '-b:v ' + gb_env['HLS_VIDEO_BITRATE'] \
+                if len(gb_env['HLS_VIDEO_BITRATE'])>1 else ''
         frame = '-r ' + gb_env['HLS_VIDEO_FPS'] \
                 if len(gb_env['HLS_VIDEO_FPS'])>1 else ''
         video_attr = f"{codec} {size} {bitrate} {frame}"

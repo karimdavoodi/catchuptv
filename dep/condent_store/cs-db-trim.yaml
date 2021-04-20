@@ -3,98 +3,46 @@ kind: ConfigMap
 metadata:
   name: cs-db-trim-config
 data:
-
-  # For PostgreSQL
-  POSTGRES_HOST: "cs-db-trim-postgres"
+  POSTGRES_HOST: "cs-db-trim"
   POSTGRES_USER: "postgres"
   POSTGRES_PASSWORD: "31233123"
   POSTGRES_DB: "postgres"
   PGDATA: "/data"
-
-  PGRST_DB_URI: "postgres://postgres:31233123@cs-db-trim-postgres:5432/postgres"
-  PGRST_DB_SCHEMA: "public"
-  PGRST_DB_ANON_ROLE: "postgres"
-
-  init.sql: |
-    CREATE DATABASE trim;
-    GRANT ALL PRIVILEGES ON DATABASE trim TO postgres;
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: cs-db-trim-api
+  name: cs-db-trim
   labels:
-    app: cs-db-trim-api
-    topic: trim
-spec:
-  ports:
-    - port: 3000
-      targetPort: 3000
-  selector:
-    app: cs-db-trim-api
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: cs-db-trim-postgres
-  labels:
-    app: cs-db-trim-postgres
+    app: cs-db-trim
     topic: trim
 spec:
   ports:
     - port: 5432
       targetPort: 5432
   selector:
-    app: cs-db-trim-postgres
+    app: cs-db-trim
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cs-db-trim-api-dep
+  name: cs-db-trim-dep
   labels:
     tire: core
     topic: trim
 spec:
   selector:
     matchLabels:
-      app: cs-db-trim-api
+      app: cs-db-trim
   replicas: 1
   template:
     metadata:
       labels:
-        app: cs-db-trim-api
+        app: cs-db-trim
         topic: trim
     spec:
       containers:
-        - name: cs-db-trim-api
-          image: postgrest/postgrest
-          imagePullPolicy: Never
-          ports:
-            - containerPort: 3000
-          envFrom:
-            - configMapRef:
-                name: cs-db-trim-config
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: cs-db-trim-postgres-dep
-  labels:
-    tire: core
-    topic: trim
-spec:
-  selector:
-    matchLabels:
-      app: cs-db-trim-postgres
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        app: cs-db-trim-postgres
-        topic: trim
-    spec:
-      containers:
-        - name: cs-db-trim-postgres
+        - name: cs-db-trim
           image: postgres:13.2
           imagePullPolicy: Never
           ports:
@@ -108,4 +56,4 @@ spec:
 #      volumes:
 #        - name: db-data
 #          persistentVolumeClaim:
-#            claimName: pvc-cs-db-trim
+#            claimName: cs-pvc-db-trim

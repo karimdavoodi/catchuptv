@@ -1,0 +1,70 @@
+cs-db-info: collections
+---
+channel:
+  name: string
+  sourceUrl: string
+  icon: binData
+  language: iso639
+  country: iso3166
+  dailyStart: string,
+  dailyStop: string,
+  bitrates:
+    - bandwidth: int
+      transcodeProfile: int
+  title:
+    - lang: iso639
+      text: string
+  description:
+    - lang: iso639
+      text: string
+  category:
+    - name: string
+  keyword:
+    - name: string
+  rating:
+    - system: string
+      value: string
+  starRating: int
+---
+transcodeProfile:
+  _id: int
+  name: string
+  video:
+    codec: string
+    resolution: string
+    framePerSec: int
+  audio:
+    codec: string
+    bitrate: int
+---
+VOD:
+  name: string
+  importUrl: string
+  icon: binData
+  language: iso639
+  origLanguage: iso639
+  country: iso3166
+  date: string
+  bitrates:
+    - bandwidth: int
+      transcodeProfile: int
+  title:
+    - lang: iso639
+      text: string
+  description:
+    - lang: iso639
+      text: string
+  category:
+    - name: string
+  keyword:
+    - name: string
+  rating:
+    - system: string
+      value: string
+  starRating: int
+  episodeNumber: string
+  origResolution: string
+  thumbnailPiont: int
+  subtitle:
+    - lang: iso639
+      importUrl: string

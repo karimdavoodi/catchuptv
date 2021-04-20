@@ -1,0 +1,1 @@
+../../../libs/python/rabbitmq.py

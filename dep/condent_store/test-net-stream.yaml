@@ -15,7 +15,7 @@ spec:
       volumes:
         - name: seg-data
           persistentVolumeClaim:
-            claimName: pvc-cs-fs-seg
+            claimName: cs-pvc-fs-seg
       containers:
         - name: test-net-stream
           image: test-net-stream

@@ -1,53 +1,48 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: cs-gb-mq-config
+  name: cs-live-play-config
 data:
-  RABBITMQ_DEFAULT_USER: "karim"
-  RABBITMQ_DEFAULT_PASS: "31233123"
+  LIVE_CACHE_PASS: "31233123"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: cs-gb-mq
+  name: cs-live-play
   labels:
-    app: cs-gb-mq
+    app: cs-live-play
 spec:
   ports:
-    - port: 5672
-      targetPort: 5672
+    - port: 80
+      targetPort: 80
   selector:
-    app: cs-gb-mq
-
+    app: cs-live-play
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cs-gb-mq-dep
+  name: cs-live-play-dep
   labels:
     tire: core
-    topic: mq
+    topic: live
 spec:
   selector:
     matchLabels:
-      app: cs-gb-mq
+      app: cs-live-play
   replicas: 1
   template:
     metadata:
       labels:
-        app: cs-gb-mq
+        app: cs-live-play
     spec:
       containers:
-        - name: cs-gb-mq
-          image: rabbitmq:3.8
+        - name: cs-live-play
+          image: cs-live-play
           imagePullPolicy: Never
           ports:
-            - containerPort: 5762
+            - containerPort: 3000
           envFrom:
             - configMapRef:
                 name: cs-gb-config
             - configMapRef:
-                name: cs-gb-mq-config
-          resources:
-            limits:
-              memory: "1000Mi"
+                name: cs-live-play-config

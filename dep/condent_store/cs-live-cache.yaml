@@ -1,53 +1,51 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: cs-gb-mq-config
+  name: cs-live-cache-config
 data:
-  RABBITMQ_DEFAULT_USER: "karim"
-  RABBITMQ_DEFAULT_PASS: "31233123"
+  LIVE_CACHE_PASS: "31233123"
+  REDIS_PASSWORD: "31233123"
+  REDIS_AOF_ENABLED: "no"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: cs-gb-mq
+  name: cs-live-cache
   labels:
-    app: cs-gb-mq
+    app: cs-live-cache
 spec:
   ports:
-    - port: 5672
-      targetPort: 5672
+    - port: 6379
+      targetPort: 6379
   selector:
-    app: cs-gb-mq
-
+    app: cs-live-cache
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cs-gb-mq-dep
+  name: cs-live-cache-dep
   labels:
     tire: core
-    topic: mq
+    topic: cache
 spec:
   selector:
     matchLabels:
-      app: cs-gb-mq
+      app: cs-live-cache
   replicas: 1
   template:
     metadata:
       labels:
-        app: cs-gb-mq
+        app: cs-live-cache
     spec:
       containers:
-        - name: cs-gb-mq
-          image: rabbitmq:3.8
+        - name: cs-live-cache
+          image: bitnami/redis:6.2
           imagePullPolicy: Never
           ports:
-            - containerPort: 5762
+            - containerPort: 6379
           envFrom:
             - configMapRef:
-                name: cs-gb-config
-            - configMapRef:
-                name: cs-gb-mq-config
+                name: cs-live-cache-config
           resources:
             limits:
               memory: "1000Mi"

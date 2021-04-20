@@ -1,59 +1,63 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: cs-db-seg-config
+  name: cs-db-info-config
 data:
   MONGO_INITDB_ROOT_USERNAME: "mongodb"
   MONGO_INITDB_ROOT_PASSWORD: "31233123"
   MONGO_INITDB_DATABASE: "restheart"
-  CS_DB_SEG_URL: "mongodb://mongodb:31233123@cs-db-seg"
-  CS_DB_SEG_DB: "restheart"
+  # for use by restheart
+  MONGO_URI: "mongodb://mongodb:31233123@cs-db-info"
+  # for use in cs-db-epg-push
+  CS_DB_INFO_URL: "mongodb://mongodb:31233123@cs-db-info"
+  CS_DB_INFO_DB: "restheart"
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: cs-db-seg
+  name: cs-db-info
   labels:
-    app: cs-db-seg
-    topic: segment
+    app: cs-db-info
+    topic: info
 spec:
   ports:
     - port: 27017
       targetPort: 27017
   selector:
-    app: cs-db-seg
+    app: cs-db-info
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cs-db-seg-dep
+  name: cs-db-info-dep
   labels:
     tire: core
-    topic: segment
+    topic: info
 spec:
   selector:
     matchLabels:
-      app: cs-db-seg
+      app: cs-db-info
   replicas: 1
   template:
     metadata:
       labels:
-        app: cs-db-seg
-        topic: segment
+        app: cs-db-info
+        topic: info
     spec:
       containers:
-        - name: cs-db-seg
+        - name: cs-db-info
           image: mongo:4.4
           imagePullPolicy: Never
           ports:
             - containerPort: 27017
           envFrom:
             - configMapRef:
-                name: cs-db-seg-config
+                name: cs-db-info-config
 #          volumeMounts:
 #            - name: db-data
 #              mountPath: /data
 #      volumes:
 #        - name: db-data
 #          persistentVolumeClaim:
-#            claimName: cs-pvc-db-seg
+#            claimName: cs-pvc-db-info
