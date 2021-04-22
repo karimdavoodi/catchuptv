@@ -5,6 +5,11 @@ metadata:
 data:
   RABBITMQ_DEFAULT_USER: "karim"
   RABBITMQ_DEFAULT_PASS: "31233123"
+
+  GB_MQ_USER: "karim"
+  GB_MQ_PASS: "31233123"
+  GB_MQ_EPG_QUEUE: "epg"
+  GB_MQ_SEG_QUEUE: "seg"
 ---
 apiVersion: v1
 kind: Service
@@ -40,12 +45,10 @@ spec:
       containers:
         - name: cs-gb-mq
           image: rabbitmq:3.8
-          imagePullPolicy: Never
+          
           ports:
             - containerPort: 5762
           envFrom:
-            - configMapRef:
-                name: cs-gb-config
             - configMapRef:
                 name: cs-gb-mq-config
           resources:

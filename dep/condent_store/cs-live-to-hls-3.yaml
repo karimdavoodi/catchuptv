@@ -43,21 +43,21 @@ spec:
       containers:
         - name: cs-live-to-hls
           image: cs-live-to-hls
-          imagePullPolicy: Never
+          
           volumeMounts:
             - name: hls-out
               mountPath: /hls
           envFrom:
             - configMapRef:
-                name: cs-gb-config
+                name: cs-gb-mq-config
             - configMapRef:
                 name: cs-live-to-hls-config-3
       initContainers:
         - name: wait-for-mq
           image: busybox:1.28
-          imagePullPolicy: Never
-          command: ['sh', '-c', "until nslookup $GB_MQ_HOST; do echo \
+          
+          command: ['sh', '-c', "until nslookup $CS_GB_MQ_SERVICE_HOST; do echo \
 'Wait for gb-mq'; sleep 3; done"]
           envFrom:
             - configMapRef:
-                name: cs-gb-config
+                name: cs-gb-mq-config

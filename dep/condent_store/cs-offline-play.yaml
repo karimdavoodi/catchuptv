@@ -38,11 +38,11 @@ spec:
       containers:
         - name: cs-offline-play
           image: cs-offline-play
-          imagePullPolicy: Never
+          
           ports:
             - containerPort: 3000
           envFrom:
             - configMapRef:
-                name: cs-gb-config
+                name: cs-gb-mq-config
             - configMapRef:
                 name: cs-offline-config

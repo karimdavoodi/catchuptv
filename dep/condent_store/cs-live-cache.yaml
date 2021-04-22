@@ -40,7 +40,7 @@ spec:
       containers:
         - name: cs-live-cache
           image: bitnami/redis:6.2
-          imagePullPolicy: Never
+          
           ports:
             - containerPort: 6379
           envFrom:

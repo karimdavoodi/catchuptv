@@ -44,7 +44,7 @@ spec:
       containers:
         - name: cs-db-seg
           image: mongo:4.4
-          imagePullPolicy: Never
+          
           ports:
             - containerPort: 27017
           envFrom:

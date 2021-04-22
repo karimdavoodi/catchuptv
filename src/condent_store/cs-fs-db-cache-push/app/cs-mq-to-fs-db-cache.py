@@ -11,13 +11,13 @@ import rabbitmq
 
 root = '/data'
 gb_env = util.get_env([
-    'GB_MQ_HOST', 
+    'CS_GB_MQ_SERVICE_HOST'
     'GB_MQ_USER', 
     'GB_MQ_PASS',
     'GB_MQ_SEG_QUEUE', 
     'CS_DB_SEG_URL',
     'CS_DB_SEG_DB',
-    'LIVE_CACHE_HOST', 
+    'CS_LIVE_CACHE_SERVICE_HOST', 
     'LIVE_CACHE_PASS'])
     
 
@@ -26,14 +26,14 @@ def start_consuming():
     db = mongo_client[gb_env['CS_DB_SEG_DB']]
 
     mq = rabbitmq.MQ_direct(
-            host = gb_env['GB_MQ_HOST'],        
+            host = gb_env['CS_GB_MQ_SERVICE_HOST'],        
             user = gb_env['GB_MQ_USER'],        
             passwd = gb_env['GB_MQ_PASS'],   
             queue  = gb_env['GB_MQ_SEG_QUEUE'],   
             ttl = 60000)
 
     redis_con = redis.Redis(
-            host=gb_env['LIVE_CACHE_HOST'], 
+            host=gb_env['CS_LIVE_CACHE_SERVICE_HOST'], 
             port=6379, 
             password=gb_env['LIVE_CACHE_PASS'])
     def consume_mq(ch, method, properties, body):

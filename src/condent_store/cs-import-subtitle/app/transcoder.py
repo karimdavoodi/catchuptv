@@ -9,7 +9,7 @@ import util
 import rabbitmq
 
 gb_env = util.get_env([
-        'GB_MQ_HOST',
+        'CS_GB_MQ_SERVICE_HOST',
         'GB_MQ_USER',
         'GB_MQ_PASS',
         'CHANNEL_NAME',
@@ -27,7 +27,7 @@ gb_env = util.get_env([
         'GB_MQ_SEG_QUEUE'])
 
 mq = rabbitmq.MQ_direct(
-        host = gb_env['GB_MQ_HOST'],       
+        host = gb_env['CS_GB_MQ_SERVICE_HOST'],       
         user = gb_env['GB_MQ_USER'],       
         passwd = gb_env['GB_MQ_PASS'],  
         queue  = gb_env['GB_MQ_SEG_QUEUE'],  

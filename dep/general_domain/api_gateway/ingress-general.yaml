@@ -11,38 +11,31 @@ spec:
   rules:
     - http:
         paths:
-          - path: /epg
+          - path: /v1/cs/info/search
             pathType: Prefix
             backend:
               service:
-                name: db-epg-postgrest
+                name: cs-search
                 port:
-                  number: 3000
-          - path: /trim
+                  number: 80
+          - path: /v1/cs/info/manage
             pathType: Prefix
             backend:
               service:
-                name: db-trim-postgrest
+                name: cs-input-deploy
                 port:
-                  number: 3000
-          - path: /trim-jobs
-            pathType: Prefix
-            backend:
-              service:
-                name: trim-jobs
-                port:
-                  number: 3000
-          - path: /offline
+                  number: 80
+          - path: /v1/cs/offline
             pathType: Prefix
             backend:
               service:
                 name: cs-offline-play
                 port:
                   number: 80
-          - path: /live
+          - path: /v1/cs/live
             pathType: Prefix
             backend:
               service:
-                name: cs-live-cache-play
+                name: cs-live-play
                 port:
                   number: 80

@@ -13,13 +13,13 @@ import util
 app = FastAPI()
 redis_con = None
 
-gb_env = util.get_env(['LIVE_CACHE_HOST', 'LIVE_CACHE_PASS'])
+gb_env = util.get_env(['CS_LIVE_CACHE_SERVICE_HOST', 'LIVE_CACHE_PASS'])
 
 
 def connect_redis():
     while True:
         try:
-            return redis.Redis(host=gb_env['LIVE_CACHE_HOST'], 
+            return redis.Redis(host=gb_env['CS_LIVE_CACHE_SERVICE_HOST'], 
                     port=6379, password=gb_env['LIVE_CACHE_PASS'])
         except:
             util.lprint()

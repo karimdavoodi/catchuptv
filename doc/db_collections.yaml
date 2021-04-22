@@ -10,7 +10,7 @@ channel:
   dailyStop: string,
   bitrates:
     - bandwidth: int
-      transcodeProfile: int
+      resolution: string
   title:
     - lang: iso639
       text: string
@@ -58,12 +58,10 @@ VOD:
     - name: string
   keyword:
     - name: string
-  rating:
-    - system: string
-      value: string
-  starRating: int
+  rateAge: int,
+  rateStar: float,
+  rateIMDb: float,
   episodeNumber: string
-  origResolution: string
   thumbnailPiont: int
   subtitle:
     - lang: iso639

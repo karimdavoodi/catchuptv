@@ -19,5 +19,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 
 RUN pip3 install pika
 RUN pip3 install redis
+RUN pip3 install pymongo
+RUN pip3 install kubernetes
+
 
 CMD [ "/bin/bash", "-c","while true;do sleep 5; echo 'running'; done" ]

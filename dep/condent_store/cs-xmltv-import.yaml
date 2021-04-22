@@ -27,7 +27,7 @@ spec:
       containers:
         - name: chan-net-to-epg
           image: chan-net-to-epg
-          imagePullPolicy: Never
+          
           envFrom:
             - configMapRef:
                 name: gb-config
@@ -36,15 +36,15 @@ spec:
       initContainers:
         - name: wait-for-mq
           image: busybox:1.28
-          imagePullPolicy: Never
-          command: ['sh', '-c', "until nslookup $GB_MQ_HOST; do echo \
+          
+          command: ['sh', '-c', "until nslookup $CS_GB_MQ_SERVICE_HOST; do echo \
 'Wait for gb-mq'; sleep 3; done"]
           envFrom:
             - configMapRef:
                 name: gb-config
         - name: wait-for-epg-db
           image: busybox:1.28
-          imagePullPolicy: Never
+          
           command: ['sh', '-c', "until nslookup $DB_EPG_HOST; do echo \
 'Wait for db-epg'; sleep 3; done"]
           envFrom:

@@ -5,12 +5,15 @@ metadata:
 data:
   MONGO_INITDB_ROOT_USERNAME: "mongodb"
   MONGO_INITDB_ROOT_PASSWORD: "31233123"
-  MONGO_INITDB_DATABASE: "restheart"
+  MONGO_INITDB_DATABASE: "cs"
   # for use by restheart
   MONGO_URI: "mongodb://mongodb:31233123@cs-db-info"
-  # for use in cs-db-epg-push
+  # for use in code
   CS_DB_INFO_URL: "mongodb://mongodb:31233123@cs-db-info"
-  CS_DB_INFO_DB: "restheart"
+  CS_DB_INFO_DB: "cs"
+  CS_DB_INFO_DB_CHANNEL: "channel"
+  CS_DB_INFO_DB_VOD: "vod"
+  CS_DB_INFO_DB_EPG: "epg"
 
 ---
 apiVersion: v1
@@ -48,7 +51,6 @@ spec:
       containers:
         - name: cs-db-info
           image: mongo:4.4
-          imagePullPolicy: Never
           ports:
             - containerPort: 27017
           envFrom:

@@ -11,7 +11,7 @@ import postgresql
 
 app = FastAPI()
 
-gb_env = util.get_env(['LIVE_CACHE_HOST', 'LIVE_CACHE_PASS'])
+gb_env = util.get_env(['CS_LIVE_CACHE_SERVICE_HOST', 'LIVE_CACHE_PASS'])
 
 @app.get("/")
 def read_root():

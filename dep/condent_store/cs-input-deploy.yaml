@@ -1,41 +1,40 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: cs-db-info-api
+  name: cs-input-deploy
   labels:
-    app: cs-db-info-api
-    topic: info
+    app: cs-input-deploy
 spec:
   ports:
-    - port: 8080
-      targetPort: 8080
+    - name: http
+      port: 80
+      targetPort: 80
   selector:
-    app: cs-db-info-api
+    app: cs-input-deploy
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cs-db-info-api-dep
+  name: cs-input-deploy-dep
   labels:
     tire: core
     topic: info
 spec:
   selector:
     matchLabels:
-      app: cs-db-info-api
+      app: cs-input-deploy
   replicas: 1
   template:
     metadata:
       labels:
-        app: cs-db-info-api
-        topic: info
+        app: cs-input-deploy
     spec:
       containers:
-        - name: cs-db-info-api
-          image: cs-db-info-api
+        - name: cs-input-deploy
+          image: cs-input-deploy
           
           ports:
-            - containerPort: 8080
+            - containerPort: 80
           envFrom:
             - configMapRef:
                 name: cs-db-info-config
