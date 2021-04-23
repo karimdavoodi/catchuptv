@@ -19,7 +19,7 @@ spec:
       containers:
         - name: test-net-stream
           image: test-net-stream
-          
+          imagePullPolicy: Never
           volumeMounts:
             - name: seg-data
               mountPath: /test_data

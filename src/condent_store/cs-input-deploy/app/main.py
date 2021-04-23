@@ -39,7 +39,7 @@ async def api_put(db_path:str, request: Request):
     ret = requests.put(url, data=body)
     util.eprint(url,'ret:',str(ret.text))
     if ret.status_code == 200:
-        deploy.kube_apply(db_path, body)
+        deploy.kube_create(db_path, body)
     return ret.text
 
 @app.post("/v1/cs/info/manage/{db_path:path}")
@@ -51,7 +51,7 @@ async def api_post(db_path:str, request: Request):
     ret = requests.post(url, data=body)
     util.eprint(url,'ret:',str(ret.text))
     if ret.status_code == 200:
-        deploy.kube_apply(db_path, body)
+        deploy.kube_create(db_path, body)
             
     return ret.text
 
@@ -77,5 +77,5 @@ async def api_patch(db_path:str, request: Request):
     ret = requests.patch(url, data=body)
     util.eprint(url,'ret:',str(ret.text))
     if ret.status_code == 200:
-        deploy.kube_apply(db_path, body)
+        deploy.kube_create(db_path, body)
     return ret.text

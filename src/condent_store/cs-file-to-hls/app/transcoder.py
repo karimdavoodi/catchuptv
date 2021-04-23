@@ -3,6 +3,7 @@ import os
 import time
 import json
 import pyinotify
+import subprocess
 from threading import Thread
 
 import util
@@ -12,14 +13,11 @@ gb_env = util.get_env([
         'CS_GB_MQ_SERVICE_HOST',
         'GB_MQ_USER',
         'GB_MQ_PASS',
-        'CHANNEL_NAME',
-        'CHANNEL_BANDWIDTH',
-        'CHANNEL_URL',
-        'CHANNEL_LIVE',
-        'CHANNEL_DAILY_START',
-        'CHANNEL_DAILY_STOP',
+        'FILE_IMPORT_DELAY',
+        'FILE_NAME',
+        'FILE_BANDWIDTH',
+        'FILE_URL',
         'HLS_VIDEO_CODEC',
-        'HLS_VIDEO_BITRATE',
         'HLS_VIDEO_SIZE',
         'HLS_VIDEO_FPS',
         'HLS_AUDIO_CODEC',
@@ -34,68 +32,26 @@ mq = rabbitmq.MQ_direct(
         ttl = 60000
         )
 
-def time_to_stop():
-    try:
-        stop = time.strptime(gb_env['CHANNEL_DAILY_STOP'], '%H:%M')
-        now = time.localtime()
-        now_s  = now.tm_hour*3600 + now.tm_min*60 + now.tm_sec
-        stop_s  = stop.tm_hour*3600 + stop.tm_min*60 + stop.tm_sec
-        diff = stop_s - now_s if now_s < stop_s else 86400 - now_s
-        util.eprint(f"Wait {diff} second to stop")
-        return diff
-    except:
-        util.lprint()
-    return 86400
-
-def time_to_start():
-    try:
-        start = time.strptime(gb_env['CHANNEL_DAILY_START'], '%H:%M')
-        now = time.localtime()
-        now_s  = now.tm_hour*3600 + now.tm_min*60 + now.tm_sec
-        start_s  = start.tm_hour*3600 + start.tm_min*60 + start.tm_sec
-        diff = 1 if now_s > start_s else start_s - now_s
-        util.eprint(f"Wait {diff} second to start")
-        return diff
-    except:
-        util.lprint()
-    return 1
-   
-def make_daemon(func_name, func_args:str = ""):
-    if func_args == "":
-        t = Thread(target=func_name)
-    else:
-        t = Thread(target=func_name, args=[func_args])
-    t.setDaemon(True)
-    t.start()
-
-def sys_run_loop_forever(cmd:str):
-    def run_loop(cmd:str):
-        while True:
-            time.sleep(time_to_start())
-            util.eprint("Run:" + cmd)
-            os.system(cmd)
-    make_daemon(run_loop, func_args=cmd)
-
 def start_ffmpeg_thread():
     codec = gb_env['HLS_VIDEO_CODEC'].lower()
     vtranscode = False if ('copy' == codec or len(codec)<2) else True
     codec = gb_env['HLS_AUDIO_CODEC'].lower()
     atranscode = False if ('copy' == codec or len(codec)<2) else True
     if vtranscode:
-        codec = '-vcodec ' + gb_env['HLS_VIDEO_CODEC']
-        size = '-s ' + gb_env['HLS_VIDEO_SIZE'] \
-                if len(gb_env['HLS_VIDEO_SIZE'])>1 else ''
-        bitrate = '-b:v ' + gb_env['HLS_VIDEO_BITRATE'] \
-                if len(gb_env['HLS_VIDEO_BITRATE'])>1 else ''
-        frame = '-r ' + gb_env['HLS_VIDEO_FPS'] \
-                if len(gb_env['HLS_VIDEO_FPS'])>1 else ''
+        codec = '-vcodec ' + gb_env.get('HLS_VIDEO_CODEC','libx264')
+        size = '-s ' + gb_env.get('HLS_VIDEO_SIZE', '1280x720')
+        b = int(gb_env.get('FILE_BANDWIDTH', '2'))
+        if b < 100: b = b * 1000000
+        bitrate = '-b:v ' + str(b)
+        frame = '-r ' + gb_env.get('HLS_VIDEO_FPS', '24')
         video_attr = f"{codec} {size} {bitrate} {frame}"
     else:
         video_attr = "-vcodec copy"
     if atranscode:
-        codec = '-acodec ' + gb_env['HLS_AUDIO_CODEC']
-        bitrate = '-b:a ' + gb_env['HLS_AUDIO_BITRATE'] \
-                if len(gb_env['HLS_AUDIO_BITRATE'])>1 else ''
+        codec = '-acodec ' + gb_env.get('HLS_AUDIO_CODEC', 'aac')
+        b = int(gb_env.get('HLS_AUDIO_BITRATE', '128'))
+        if b < 1000: b = b * 1000
+        bitrate = '-b:a ' + str(b)
         audio_attr = f"{codec} {bitrate}"
     else:
         audio_attr = "-acodec copy"
@@ -104,19 +60,16 @@ def start_ffmpeg_thread():
             "-hls_flags second_level_segment_duration+second_level_segment_index " \
             "-strftime 1 -hls_segment_filename \"/hls/%%d_%s_%%t.ts\" " \
             "-f hls /hls/p.m3u8"
-    is_live = True if gb_env['CHANNEL_LIVE'].lower() == 'true' else False
-    cmd = "ffmpeg "
-    if not is_live:
-        util.eprint('channel is VOD, run in play time(-re)')
-        cmd += '-re '
-    tm = "-t %d" % time_to_stop()
-    cmd += f"-i {gb_env['CHANNEL_URL']!r} {tm} {smap} {video_attr} {audio_attr} {hls_attr}"
-    sys_run_loop_forever(cmd)
-
+    cmd = "ffmpeg -re "
+    cmd += f"-i {gb_env['FILE_URL']!r} {smap} {video_attr} {audio_attr} {hls_attr} "
+    util.info(cmd)
+    os.system(cmd)
+    exit(0)
 
 def send_seg_to_mq(info, file_path):
     global mq
 
+    util.debug(info)
     with open(file_path, 'rb') as f:
         merg = bytearray(json.dumps(info).encode())
         for i in range(512-len(merg)):
@@ -125,33 +78,63 @@ def send_seg_to_mq(info, file_path):
         mq.publish(merg)
             
 
+first_seg_time = 0
 def watch_segments():
     wm = pyinotify.WatchManager()
     notifier = pyinotify.Notifier(wm)
-
     def callback(event):
+        global first_seg_time
         try:
             seg = event.name.split('_')
             if len(seg)>2:
                 seq = int(seg[0])
                 start = float(seg[1])
                 duration = float(seg[2][:-3]) / 1000000
+                if first_seg_time == 0:
+                    first_seg_time = start
                 info = {
-                    "channel": gb_env["CHANNEL_NAME"],
-                    "bandwidth": gb_env['CHANNEL_BANDWIDTH'],
+                    "file": gb_env["FILE_NAME"],
+                    "bandwidth": gb_env['FILE_BANDWIDTH'],
                     "resolution": gb_env['HLS_VIDEO_SIZE'],
                     "sequence": seq,
-                    "start": start,
+                    "start": start - first_seg_time,
                     "duration": duration
                     }
                 send_seg_to_mq(info, event.pathname)
         except:
-            util.lprint()
+            util.trace()
     util.eprint(f"Watch to /hls")
     wm.add_watch('/hls', pyinotify.IN_MOVED_TO, callback)
     notifier.loop()
 
+def probe_orignal_resolution(url):
+
+    cmd = ("/usr/bin/ffprobe -probesize 100000000 " + 
+        "-select_streams v:0 -show_entries stream=width,height " + 
+        "-of csv=s=x:p=0 " + f"{url!r}")
+    for _ in range(3):
+        out = subprocess.check_output(cmd, shell=True).decode().rstrip()
+        if len(out) > 1: break
+        util.error("Can't probe {url}")
+        time.sleep(10)
+
+    return out
 
 if __name__ == '__main__':
-    start_ffmpeg_thread()
+
+    util.info('Delay before start: ' + gb_env['FILE_IMPORT_DELAY'])
+    time.sleep(int(gb_env['FILE_IMPORT_DELAY']))
+    
+    orig_resolution = probe_orignal_resolution(gb_env['FILE_URL'])
+    if orig_resolution == "":
+        util.error(f"Can't probe {gb_env['FILE_URL']}")
+        exit(0)
+
+    if gb_env['HLS_VIDEO_SIZE'] == 'original':
+        gb_env['HLS_VIDEO_SIZE'] = orig_resolution 
+
+    t = Thread(target=start_ffmpeg_thread)
+    t.setDaemon(True)
+    t.start()
+
     watch_segments()

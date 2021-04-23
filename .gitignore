@@ -3,6 +3,7 @@ tmp/
 .clangd/
 CMakeFiles/
 CMakeCache.txt
+__pycache__/
 .mypy_cache/
 *.tar
 *.tgz

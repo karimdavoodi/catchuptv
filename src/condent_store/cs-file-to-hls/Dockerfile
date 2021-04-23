@@ -10,7 +10,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 RUN pip3 install pika
 RUN pip3 install pyinotify
 
-COPY src/condent_store/cs-live-to-hls/app/transcoder.py  /app/
+COPY src/condent_store/cs-file-to-hls/app/transcoder.py  /app/
 
 COPY src/libs/python/rabbitmq.py  /app/
 COPY src/libs/python/util.py  /app/

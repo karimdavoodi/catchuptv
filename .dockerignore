@@ -3,8 +3,9 @@ tmp/
 .git/
 .clangd/
 CMakeFiles/
-CMakeCache.txt
 .mypy_cache/
+__pycache__/
+CMakeCache.txt
 *.tar
 *.tgz
 *.o

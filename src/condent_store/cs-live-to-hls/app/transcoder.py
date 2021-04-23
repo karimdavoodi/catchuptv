@@ -15,7 +15,6 @@ gb_env = util.get_env([
         'CHANNEL_NAME',
         'CHANNEL_BANDWIDTH',
         'CHANNEL_URL',
-        'CHANNEL_LIVE',
         'CHANNEL_DAILY_START',
         'CHANNEL_DAILY_STOP',
         'HLS_VIDEO_CODEC',
@@ -80,21 +79,22 @@ def start_ffmpeg_thread():
     vtranscode = False if ('copy' == codec or len(codec)<2) else True
     codec = gb_env['HLS_AUDIO_CODEC'].lower()
     atranscode = False if ('copy' == codec or len(codec)<2) else True
+
     if vtranscode:
-        codec = '-vcodec ' + gb_env['HLS_VIDEO_CODEC']
-        size = '-s ' + gb_env['HLS_VIDEO_SIZE'] \
-                if len(gb_env['HLS_VIDEO_SIZE'])>1 else ''
-        bitrate = '-b:v ' + gb_env['CHANNEL_BANDWIDTH'] \
-                if len(gb_env['CHANNEL_BANDWIDTH'])>1 else ''
-        frame = '-r ' + gb_env['HLS_VIDEO_FPS'] \
-                if len(gb_env['HLS_VIDEO_FPS'])>1 else ''
+        codec = '-vcodec ' + gb_env.get('HLS_VIDEO_CODEC','libx264')
+        size = '-s ' + gb_env.get('HLS_VIDEO_SIZE', '1280x720')
+        b = int(gb_env.get('CHANNEL_BANDWIDTH', '2'))
+        if b < 100: b = b * 1000000
+        bitrate = '-b:v ' + str(b)
+        frame = '-r ' + gb_env.get('HLS_VIDEO_FPS', '24')
         video_attr = f"{codec} {size} {bitrate} {frame}"
     else:
         video_attr = "-vcodec copy"
     if atranscode:
-        codec = '-acodec ' + gb_env['HLS_AUDIO_CODEC']
-        bitrate = '-b:a ' + gb_env['HLS_AUDIO_BITRATE'] \
-                if len(gb_env['HLS_AUDIO_BITRATE'])>1 else ''
+        codec = '-acodec ' + gb_env.get('HLS_AUDIO_CODEC', 'aac')
+        b = int(gb_env.get('HLS_AUDIO_BITRATE', '128'))
+        if b < 1000: b = b * 1000
+        bitrate = '-b:a ' + str(b)
         audio_attr = f"{codec} {bitrate}"
     else:
         audio_attr = "-acodec copy"
@@ -103,11 +103,7 @@ def start_ffmpeg_thread():
             "-hls_flags second_level_segment_duration+second_level_segment_index " \
             "-strftime 1 -hls_segment_filename \"/hls/%%d_%s_%%t.ts\" " \
             "-f hls /hls/p.m3u8"
-    is_live = True if gb_env['CHANNEL_LIVE'].lower() == 'true' else False
     cmd = "ffmpeg "
-    if not is_live:
-        util.eprint('channel is VOD, run in play time(-re)')
-        cmd += '-re '
     tm = "-t %d" % time_to_stop()
     cmd += f"-i {gb_env['CHANNEL_URL']!r} {tm} {smap} {video_attr} {audio_attr} {hls_attr}"
     sys_run_loop_forever(cmd)
