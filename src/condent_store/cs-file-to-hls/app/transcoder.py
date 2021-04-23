@@ -9,7 +9,6 @@ from threading import Thread
 import util
 import rabbitmq
 
-job_finish = False
 gb_env = util.get_env([
         'CS_GB_MQ_SERVICE_HOST',
         'GB_MQ_USER',
@@ -66,7 +65,7 @@ def start_ffmpeg_thread():
     util.info(cmd)
     os.system(cmd)
     util.info('Import finished. Exit')
-    job_finish = True
+    exit(0)
 
 def send_seg_to_mq(info, file_path):
     global mq
@@ -84,7 +83,7 @@ def watch_segments():
     wm = pyinotify.WatchManager()
     notifier = pyinotify.Notifier(wm)
     def callback(event):
-        global first_seg_time, job_finish
+        global first_seg_time 
         try:
             seg = event.name.split('_')
             if len(seg)>2:
@@ -104,7 +103,6 @@ def watch_segments():
                 send_seg_to_mq(info, event.pathname)
         except:
             util.trace()
-        return job_finish
 
     util.eprint(f"Watch to /hls")
     wm.add_watch('/hls', pyinotify.IN_MOVED_TO, callback)
@@ -141,3 +139,4 @@ if __name__ == '__main__':
 
     watch_segments()
     t.join()
+    util.info('Exit')

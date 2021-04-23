@@ -33,7 +33,7 @@ redis_con = connect_redis()
 def read_root():
     return {"Hello": "World"}
 
-@app.get("/live/play.m3u8")
+@app.get("/v1/cs/live/play.m3u8")
 def live_playlist(channel:str = "", bandwidth : Optional[str] = "" ):
     global redis_con
     last = "0"
@@ -86,11 +86,11 @@ def live_playlist(channel:str = "", bandwidth : Optional[str] = "" ):
         for i in range(first, last):
             duration = str(redis_con.get(f'{channel_table}-{i}-duration').decode())
             playlist += f"#EXTINF:{duration},\n" 
-            playlist += f"/live/segment/{channel_table}-{i}-data.ts\n"
+            playlist += f"/v1/cs/live/segment/{channel_table}-{i}-data.ts\n"
 
         return Response(content=playlist, media_type="application/x-mpegURL")
  
-@app.get("/live/segment/{seg_name}")
+@app.get("/v1/cs/live/segment/{seg_name}")
 def live_segment(seg_name:str):
     data = redis_con.get(seg_name)
     if data:

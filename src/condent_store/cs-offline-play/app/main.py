@@ -6,6 +6,7 @@ import random
 from pymongo import MongoClient
 from typing import Optional
 from fastapi import FastAPI, Response
+from fastapi.responses import StreamingResponse
 
 import util
 
@@ -29,7 +30,7 @@ class InternalError(Exception):
     pass
 
 
-def gen_master_playlist(name, safe_name, is_live, start):
+def gen_master_playlist(name, is_live, start):
 
     if is_live:
         rec = info_db['live'].find_one({'name':name})
@@ -39,6 +40,7 @@ def gen_master_playlist(name, safe_name, is_live, start):
     if not rec:
         raise InternalError('Not found content in DB')
 
+    safe_name = util.uniq_name(name)
     master_play_list = "#EXTM3U\n#EXT-X-VERSION:3\n"
     for bitrate in rec['bitrates']: 
         bw  = bitrate['bandwidth']
@@ -48,7 +50,7 @@ def gen_master_playlist(name, safe_name, is_live, start):
         master_play_list += (
                 f"#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH={bw}," +
                 f"RESOLUTION={res!r}\n" +
-                f"/live/play.m3u8?{ty}={safe_name}&bandwidth={bw}&rand={rnd}&start={start}\n" )
+                f"/v1/cs/offline/play.m3u8?{ty}={safe_name}&bandwidth={bw}&rand={rnd}&start={start}\n" )
     return master_play_list
 
 
@@ -56,7 +58,7 @@ def gen_master_playlist(name, safe_name, is_live, start):
 def read_root():
     return {"Hello": "World"}
 
-@app.get("/offline/play.m3u8")
+@app.get("/v1/cs/offline/play.m3u8")
 def live_playlist(
         live      : Optional[str] = "", 
         vod       : Optional[str] = "", 
@@ -69,25 +71,23 @@ def live_playlist(
         name = live if live != "" else vod
         if name == "": 
             raise InternalError("Require 'live' or 'vod' parameter")
-        safe_name = util.uniq_name(name)
         
         # Serve Master playlist
         if bandwidth == "":
-            master_play_list = gen_master_playlist(name, safe_name, is_live, start)        
+            master_play_list = gen_master_playlist(name, is_live, start)        
+            util.debug(f"Send master play list")
             return Response(content=master_play_list, media_type="application/x-mpegURL")
 
         # ELSE Serve one playlist
         if not playlist_map.get(rand):
-            playlist_map[rand] = {
-                    "base_time": int(time.time()),
-            }
-
+            playlist_map[rand] = int(time.time())
+            
         if start == 0 and is_live:
             start = int(time.time())
         hls_time = start
         hls_time += (int(time.time()) - playlist_map[rand])
 
-        collection = f"{safe_name}_{bandwidth}"
+        collection = util.uniq_name(f"{name}_{bandwidth}")
         segments = seg_db[collection].find(
             {'_id': {
                  '$gt': hls_time,
@@ -95,24 +95,27 @@ def live_playlist(
              }}).limit(5).sort([("_id", 1)])
         playlist = ""
         sequence = -1
-        path = f'/offline/segment/{collection}'
+        path = f'/v1/cs/offline/segment/{collection}'
         if is_live:
             tm = time.localtime(hls_time)
             path += f"/{tm.tm_year}/{tm.tm_mon}/{tm.tm_mday}/{tm.tm_hour}"
             
         for seg in segments:
             if sequence == -1:
-                sequence = seq['sequence']
+                sequence = seg['sequence']
             segs = "%d.ts" % seg['_id']
-            playlist += "#EXTINF:{seg['duration']},\n"
-            playlist += "{path}/{seg['_id']}.ts"
-
+            playlist += f"#EXTINF:{seg['duration']},\n"
+            playlist += f"{path}/{seg['_id']}.ts\n"
+        
         playlist = ("#EXTM3U\n" +
                     "#EXT-X-VERSION:3\n" +
                     "#EXT-X-ALLOW-CACHE:YES\n" +
-                    "#EXT-X-MEDIA-SEQUENCE:%d\n" % sequesnce +
+                    "#EXT-X-MEDIA-SEQUENCE:%d\n" % sequence +
                     "#EXT-X-TARGETDURATION:20\n\n" +
                     playlist)
+        if sequence == -1:
+            return Response(content=f"Not found segment on col {collection} for time {hls_time}", 
+                    status_code=403)
 
         return Response(content=playlist, media_type="application/x-mpegURL")
     except InternalError as err:
@@ -121,13 +124,14 @@ def live_playlist(
         util.trace()
         return Response(content="Server error!", status_code=403)
 
-@app.get("/live/segment/{seg_path:path}")
+@app.get("/v1/cs/offline/segment/{seg_path:path}")
 def live_segment(seg_path:str):
-
-    path = '/data/{seg_path}'
+ 
+    path = f'/data/{seg_path}'
     if os.path.exists(path):
-        with open(path) as f:
-            return Response(content=f, media_type="video/mp2t")
+        util.debug(f"Try to senf {path}")
+        f = open(path, 'rb')
+        return StreamingResponse(f, media_type="video/mp2t")
     else: 
         return Response(content=f"Segment {path} not found!", status_code=403)
 
