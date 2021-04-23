@@ -27,7 +27,7 @@ async def api_get(db_path:str, request: Request):
     if len(params) > 0: params = '?' + params
     url = f'{dest}{request.url.path}{params}'
     ret = requests.get(url)
-    util.eprint(url,'ret:',str(ret.text))
+    util.debug(f"GET {url} ret_status: {ret.status_code} text: {ret.text}")
     return ret.text
 
 @app.put("/v1/cs/info/manage/{db_path:path}")
@@ -37,9 +37,11 @@ async def api_put(db_path:str, request: Request):
     url = f'{dest}{request.url.path}{params}'
     body = await request.body()
     ret = requests.put(url, data=body)
-    util.eprint(url,'ret:',str(ret.text))
-    if ret.status_code == 200:
+    util.debug(f"PUT {url} body: {body} ret_status: {ret.status_code} text: {ret.text}")
+
+    if ret.status_code >= 200 and ret.status_code <= 300 and len(body) > 1:
         deploy.kube_create(db_path, body)
+
     return ret.text
 
 @app.post("/v1/cs/info/manage/{db_path:path}")
@@ -49,8 +51,9 @@ async def api_post(db_path:str, request: Request):
     url = f'{dest}{request.url.path}{params}'
     body = await request.body()
     ret = requests.post(url, data=body)
-    util.eprint(url,'ret:',str(ret.text))
-    if ret.status_code == 200:
+    util.debug(f"POST {url} body: {body} ret_status: {ret.status_code} text: {ret.text}")
+
+    if ret.status_code >= 200 and ret.status_code <= 300 and len(body) > 1:
         deploy.kube_create(db_path, body)
             
     return ret.text
@@ -62,8 +65,9 @@ async def api_delete(db_path:str, request: Request):
     url = f'{dest}{request.url.path}{params}'
     body = await request.body()
     ret = requests.delete(url, data=body)
-    util.eprint(url,'ret:',str(ret.text))
-    if ret.status_code == 200:
+    util.debug(f"DELETE {url} body: {body} ret_status: {ret.status_code} text: {ret.text}")
+
+    if ret.status_code >= 200 and ret.status_code <= 300:
         deploy.kube_delete(db_path, body)
  
     return ret.text
@@ -75,7 +79,9 @@ async def api_patch(db_path:str, request: Request):
     url = f'{dest}{request.url.path}{params}'
     body = await request.body()
     ret = requests.patch(url, data=body)
-    util.eprint(url,'ret:',str(ret.text))
-    if ret.status_code == 200:
+    util.debug(f"PATCH {url} body: {body} ret_status: {ret.status_code} text: {ret.text}")
+
+    if ret.status_code >= 200 and ret.status_code <= 300 and len(body) > 1:
         deploy.kube_create(db_path, body)
+
     return ret.text

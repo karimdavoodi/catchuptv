@@ -83,17 +83,17 @@ def start_ffmpeg_thread():
     if vtranscode:
         codec = '-vcodec ' + gb_env.get('HLS_VIDEO_CODEC','libx264')
         size = '-s ' + gb_env.get('HLS_VIDEO_SIZE', '1280x720')
-        b = int(gb_env.get('CHANNEL_BANDWIDTH', '2'))
-        if b < 100: b = b * 1000000
+        b = float(gb_env.get('CHANNEL_BANDWIDTH', '2'))
+        if b < 100: b = int(b * 1000000)
         bitrate = '-b:v ' + str(b)
         frame = '-r ' + gb_env.get('HLS_VIDEO_FPS', '24')
-        video_attr = f"{codec} {size} {bitrate} {frame}"
+        video_attr = f"{codec} {size} {bitrate} {frame} -g 24"
     else:
         video_attr = "-vcodec copy"
     if atranscode:
         codec = '-acodec ' + gb_env.get('HLS_AUDIO_CODEC', 'aac')
-        b = int(gb_env.get('HLS_AUDIO_BITRATE', '128'))
-        if b < 1000: b = b * 1000
+        b = float(gb_env.get('HLS_AUDIO_BITRATE', '128'))
+        if b < 1000: b = int(b * 1000)
         bitrate = '-b:a ' + str(b)
         audio_attr = f"{codec} {bitrate}"
     else:
@@ -129,7 +129,7 @@ def watch_segments():
             seg = event.name.split('_')
             if len(seg)>2:
                 seq = int(seg[0])
-                start = float(seg[1])
+                start = int(seg[1])
                 duration = float(seg[2][:-3]) / 1000000
                 info = {
                     "channel": gb_env["CHANNEL_NAME"],

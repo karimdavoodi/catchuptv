@@ -14,5 +14,7 @@ gb_env = util.get_env([
 
 
 if __name__ == '__main__':
-    util.error("TODO:... ")
+    while True:
+        util.error("TODO:... ")
+        time.sleep(30)
     exit(0)

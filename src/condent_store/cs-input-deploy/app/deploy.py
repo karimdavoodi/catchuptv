@@ -11,13 +11,14 @@ config.load_incluster_config()
 job_api = client.BatchV1Api()
 dep_api = client.AppsV1Api()
 
+
 def kube_delete(db_path:str, body:str):
     rec = json.loads(body)
     '''
     if '/cs/vod' in db_path:
         kube_create_file_job(rec)
-    if '/cs/channel' in db_path:
-        kube_create_channel_dep(rec)
+    if '/cs/live' in db_path:
+        kube_create_live_dep(rec)
     '''
      
 def kube_create(db_path:str, body:str):
@@ -29,35 +30,40 @@ def kube_create(db_path:str, body:str):
             util.error(f'Invalid json: {body}')
             return False
 
+        util.info(f"Try to deploy for {rec['name']}")
         if rec.get('sourceUrl','') == '':
-            util.error('Empty sourceUrl for channel ' + rec['name'])
+            util.error('Empty sourceUrl for live ' + rec['name'])
             return False
         if not kube_test_credentials():
-           util.info("Can't connnet to kubernetes!")
+           util.error("Can't connnet to kubernetes!")
            return False
+
+        add_xmltv = False
         bandwidth_list = []
         for bitrate in rec['bitrates']:
+            util.info(f"Try to deploy for {rec['name']} bitrate {bitrate['bandwidth']}")
             if bitrate['bandwidth'] in bandwidth_list:
-                util.error('Duplicate bandwidth in channel ' + rec['name'])
+                util.error('Duplicate bandwidth in live ' + rec['name'])
                 continue
             bandwidth_list.append(bitrate['bandwidth'])
 
-            if '/cs/channel' in db_path:
-                chan = config_channel_dep(rec, base_yaml.channel_dep, bitrate)
-                dep_api.create_namespaced_deployment(body = chan, namespace = "default")
-                util.info("Created Channel Dep: " + chan['metadata']['name'])
-                if rec.get('epgUrl','') != '':
-                    xmltv = config_xmltv_dep(rec, base_yaml.xmltv_dep)
+            if 'cs/live' in db_path:
+                live = config_live_dep(rec, base_yaml.live_dep.copy(), bitrate)
+                dep_api.create_namespaced_deployment(body = live, namespace = "default")
+                util.info("Created Channel Dep: " + live['metadata']['name'])
+                if rec.get('epgUrl','') != '' and not add_xmltv:
+                    add_xmltv = True
+                    xmltv = config_xmltv_dep(rec, base_yaml.xmltv_dep.copy())
                     dep_api.create_namespaced_deployment(body = xmltv, namespace = "default")
                     util.info("Created XMLTV Dep: " + xmltv['metadata']['name'])
 
-            elif '/cs/vod' in db_path:
-                job = config_file_job(rec, base_yaml.file_job, bitrate)
+            elif 'cs/vod' in db_path:
+                job = config_file_job(rec, base_yaml.file_job.copy(), bitrate)
                 job_api.create_namespaced_job(body = job, namespace = "default")
                 util.info("Created File Job: " + job['metadata']['name'])
                 for subtitle in rec.get('subtitle',[]):
                     if subtitle.get('url','') != '':
-                        sub = config_subtitle_job(rec, base_yaml.subtitle_job, subtitle)
+                        sub = config_subtitle_job(rec, base_yaml.subtitle_job.copy(), subtitle)
                         job_api.create_namespaced_job(body = sub, namespace = "default")
                         util.info("Created Subtitle Job: " + sub['metadata']['name'])
     except:
@@ -69,7 +75,7 @@ def kube_create(db_path:str, body:str):
 def config_file_job(rec, template, bitrate):
     file = template
     safe_name = util.uniq_name(rec['name'], '-', False)
-    file['metadata']['name'] += f"-{safe_name}-{bitrate['bandwidth']}" 
+    file['metadata']['name'] = f"cs-filetohls-{safe_name}-{bitrate['bandwidth']}" 
     transcode = base_yaml.transcode_profiles.get(bitrate.get('resolution','original'),
             base_yaml.transcode_profiles_def)
     file["spec"]["template"]["spec"]["containers"][0]["env"] = [
@@ -104,11 +110,26 @@ def config_file_job(rec, template, bitrate):
     util.debug(file)
     return file
 
+def config_xmltv_dep(rec, template):
+    epg =  template
+    safe_name = util.uniq_name(rec['name'], '-', False)
+    epg['metadata']['name'] = f"cs-importepg-{safe_name}" 
+    epg["spec"]["template"]["spec"]["containers"][0]["env"] = [
+          { "name": "CHANNEL_NAME",
+            "value": rec["name"]
+          },
+          { "name": "XMLTV_URL",
+            "value": rec.get('epgUrl', '')
+          }
+        ]
+    util.debug(epg)
+    return epg
+
 def config_subtitle_job(rec, template, subtitle):
     sub = template
     safe_name = util.uniq_name(rec['name'], '-', False)
     rand_name = util.uniq_name('', '-', False)
-    sub['metadata']['name'] += f"-{safe_name}-{rand_name}" 
+    sub['metadata']['name'] = f"cs-importsub-{safe_name}-{rand_name}" 
     sub["spec"]["template"]["spec"]["containers"][0]["env"] = [
           { "name": "FILE_NAME",
             "value": rec["name"]
@@ -123,14 +144,13 @@ def config_subtitle_job(rec, template, subtitle):
     util.debug(sub)
     return sub
 
-def config_channel_dep(rec, template, bitrate):
-
-    chan = template
+def config_live_dep(rec, template, bitrate):
+    live = template
     safe_name = util.uniq_name(rec['name'], '-', False)
-    chan['metadata']['name'] = f"cs-live-to-hls-{safe_name}-{bitrate['bandwidth']}" 
+    live['metadata']['name'] = f"cs-livetohls-{safe_name}-{bitrate['bandwidth']}" 
     transcode = base_yaml.transcode_profiles.get(bitrate.get('resolution','original'),
             base_yaml.transcode_profiles_def)
-    chan["spec"]["template"]["spec"]["containers"][0]["env"] = [
+    live["spec"]["template"]["spec"]["containers"][0]["env"] = [
           { "name": "CHANNEL_NAME",
             "value": rec["name"]
           },
@@ -162,8 +182,8 @@ def config_channel_dep(rec, template, bitrate):
             "value": transcode["HLS_AUDIO_BITRATE"]
           }
         ]
-    util.debug(chan)
-    return chan
+    util.debug(live)
+    return live
 
 
 def kube_delete_empty_pods(namespace='default', phase='Succeeded'):
@@ -208,15 +228,14 @@ def kube_cleanup_finished_jobs(namespace='default', state='Finished'):
 def kube_test_credentials():
     try: 
         api_response = job_api.get_api_resources()
-        util.debug(api_response)
         return True
     except:
         util.trace()
     return False
 
 if __name__ == "__main__" :
-    rec = json.dumps(base_yaml.sample_channel)
-    kube_create('/cs/channel', rec)
+    rec = json.dumps(base_yaml.sample_live)
+    kube_create('/cs/live', rec)
 
     rec = json.dumps(base_yaml.sample_movie)
     kube_create('/cs/vod', rec)

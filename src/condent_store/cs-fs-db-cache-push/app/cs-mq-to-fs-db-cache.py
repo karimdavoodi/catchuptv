@@ -11,7 +11,7 @@ import rabbitmq
 
 root = '/data'
 gb_env = util.get_env([
-    'CS_GB_MQ_SERVICE_HOST'
+    'CS_GB_MQ_SERVICE_HOST',
     'GB_MQ_USER', 
     'GB_MQ_PASS',
     'GB_MQ_SEG_QUEUE', 
@@ -37,17 +37,23 @@ def start_consuming():
             port=6379, 
             password=gb_env['LIVE_CACHE_PASS'])
     def consume_mq(ch, method, properties, body):
+        is_channel = False
         try:
             info_str = body[:512].decode()
             info = json.loads(info_str)
-            channel = info['channel']
+            if info.get('channel'):
+                channel = info['channel']
+                is_channel = True
+            elif info.get('file'):
+                channel = info['file']
+
             resolution = info['resolution']
             bandwidth = info['bandwidth']
             sequence = info['sequence']
             start = info['start']
             duration = info['duration']
         except:
-            util.eprint('invalid json:', info_str)
+            util.error('invalid json:' + info_str)
             raise
 
         channel_table = util.uniq_name(f"{channel}_{bandwidth}")
@@ -55,38 +61,43 @@ def start_consuming():
         
         # Send Metadata to DB
         try:
-            db[channel_table].insert_one({
-                "_id": start,
-                "sequence": sequence,
-                "duration": duration
-                })
+            rec = {
+                    "_id": start,
+                    "sequence": sequence,
+                    "duration": duration
+                    }
+            db[channel_table].insert_one(rec)
+            util.debug(f"insert on DB col: {channel_table} data: {rec}")
         except:
-            util.lprint()
+            util.trace()
         
-        # Send to CACHE 
-        try:
-            redis_con.sadd(f"all-channels-set", channel)
-            redis_con.sadd(f"{channel_uniq}-set", f"{bandwidth}:{resolution}")
+        if is_channel:
+            # Send to CACHE 
+            try:
+                redis_con.sadd(f"all-channels-set", channel)
+                redis_con.sadd(f"{channel_uniq}-set", f"{bandwidth}:{resolution}")
 
-            redis_con.set(f"{channel_table}-seq-last",sequence)
-            redis_con.set(f"{channel_table}-{sequence}-data.ts",body[512:],100)
-            redis_con.set(f"{channel_table}-{sequence}-duration",duration,100)
-            util.eprint(f"Send to live cache {channel_table!r} seg seq {sequence}")
-        except:
-            util.lprint()
+                redis_con.set(f"{channel_table}-seq-last",sequence)
+                redis_con.set(f"{channel_table}-{sequence}-data.ts",body[512:],100)
+                redis_con.set(f"{channel_table}-{sequence}-duration",duration,100)
+                util.debug(f"Send to live cache {channel_table!r} seg seq {sequence}")
+            except:
+                util.trace()
             
         # Save in File System
         try:
-            tm = time.localtime(int(start))
-            seg_path = f"{root}/{channel_table}/{tm.tm_year}/{tm.tm_mon}/{tm.tm_mday}/{tm.tm_hour}"
+            seg_path = f"{root}/{channel_table}"
+            if is_channel:
+                tm = time.localtime(int(start))
+                seg_path += f"/{tm.tm_year}/{tm.tm_mon}/{tm.tm_mday}/{tm.tm_hour}"
             if not os.path.exists(seg_path):
                 os.makedirs(seg_path, exist_ok=True)
             file_path = f"{seg_path}/{start}.ts"
             with open(file_path, 'wb') as f:
                 f.write(body[512:])
-                util.eprint(f"Write on {file_path}")
+                util.debug(f"Write on {file_path}")
         except:
-            util.lprint()
+            util.trace()
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
     mq.consume(consume_mq)
@@ -95,8 +106,8 @@ def start_consuming():
 if __name__ == '__main__':
     while True:
         try:
-            util.eprint("Start insert process")
+            util.info("Start insert process")
             start_consuming()
         except:
-            util.lprint()
+            util.trace()
         time.sleep(15)

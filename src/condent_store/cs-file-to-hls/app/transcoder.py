@@ -9,6 +9,7 @@ from threading import Thread
 import util
 import rabbitmq
 
+job_finish = False
 gb_env = util.get_env([
         'CS_GB_MQ_SERVICE_HOST',
         'GB_MQ_USER',
@@ -40,17 +41,17 @@ def start_ffmpeg_thread():
     if vtranscode:
         codec = '-vcodec ' + gb_env.get('HLS_VIDEO_CODEC','libx264')
         size = '-s ' + gb_env.get('HLS_VIDEO_SIZE', '1280x720')
-        b = int(gb_env.get('FILE_BANDWIDTH', '2'))
-        if b < 100: b = b * 1000000
+        b = float(gb_env.get('FILE_BANDWIDTH', '2'))
+        if b < 100: b = int(b * 1000000)
         bitrate = '-b:v ' + str(b)
         frame = '-r ' + gb_env.get('HLS_VIDEO_FPS', '24')
-        video_attr = f"{codec} {size} {bitrate} {frame}"
+        video_attr = f"{codec} {size} {bitrate} {frame} -g 24"
     else:
         video_attr = "-vcodec copy"
     if atranscode:
         codec = '-acodec ' + gb_env.get('HLS_AUDIO_CODEC', 'aac')
-        b = int(gb_env.get('HLS_AUDIO_BITRATE', '128'))
-        if b < 1000: b = b * 1000
+        b = float(gb_env.get('HLS_AUDIO_BITRATE', '128'))
+        if b < 1000: b = int(b * 1000)
         bitrate = '-b:a ' + str(b)
         audio_attr = f"{codec} {bitrate}"
     else:
@@ -64,7 +65,8 @@ def start_ffmpeg_thread():
     cmd += f"-i {gb_env['FILE_URL']!r} {smap} {video_attr} {audio_attr} {hls_attr} "
     util.info(cmd)
     os.system(cmd)
-    exit(0)
+    util.info('Import finished. Exit')
+    job_finish = True
 
 def send_seg_to_mq(info, file_path):
     global mq
@@ -77,18 +79,17 @@ def send_seg_to_mq(info, file_path):
         merg.extend(f.read())
         mq.publish(merg)
             
-
 first_seg_time = 0
 def watch_segments():
     wm = pyinotify.WatchManager()
     notifier = pyinotify.Notifier(wm)
     def callback(event):
-        global first_seg_time
+        global first_seg_time, job_finish
         try:
             seg = event.name.split('_')
             if len(seg)>2:
                 seq = int(seg[0])
-                start = float(seg[1])
+                start = int(seg[1])
                 duration = float(seg[2][:-3]) / 1000000
                 if first_seg_time == 0:
                     first_seg_time = start
@@ -103,6 +104,8 @@ def watch_segments():
                 send_seg_to_mq(info, event.pathname)
         except:
             util.trace()
+        return job_finish
+
     util.eprint(f"Watch to /hls")
     wm.add_watch('/hls', pyinotify.IN_MOVED_TO, callback)
     notifier.loop()
@@ -117,7 +120,7 @@ def probe_orignal_resolution(url):
         if len(out) > 1: break
         util.error("Can't probe {url}")
         time.sleep(10)
-
+    util.info(f"Resolution of {url} is {out}")
     return out
 
 if __name__ == '__main__':
@@ -134,7 +137,7 @@ if __name__ == '__main__':
         gb_env['HLS_VIDEO_SIZE'] = orig_resolution 
 
     t = Thread(target=start_ffmpeg_thread)
-    t.setDaemon(True)
     t.start()
 
     watch_segments()
+    t.join()

@@ -15,16 +15,25 @@ base_url += '/v1/cs/info/manage'
 
 def add_channel():
     chan = base_yaml.sample_channel
-    
     chan['name'] = 'channel ' + str(random.randint(1,1000000)) 
     ret = requests.put( base_url + '/cs')
+    print(ret.text)
     ret = requests.put( base_url + '/cs/channel')
+    print(ret.text)
     ret = requests.post( base_url + '/cs/channel', json = chan)
+    print(ret.text)
 
 def add_movie():
     chan = base_yaml.sample_movie
-    chan['name'] = 'channel ' + str(random.randint(1,1000000)) 
+    chan['name'] = 'file ' + str(random.randint(1,1000000)) 
+    chan['sourceUrl'] = 'http://192.168.1.30/1.mp4'
     ret = requests.put( base_url + '/cs')
+    print(ret.text)
     ret = requests.put( base_url + '/cs/vod')
+    print(ret.text)
     ret = requests.post( base_url + '/cs/vod', json = chan)
+    print(ret.text)
+
+#add_channel()
+add_movie()
 

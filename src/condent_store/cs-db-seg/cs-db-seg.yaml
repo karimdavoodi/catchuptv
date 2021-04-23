@@ -5,9 +5,9 @@ metadata:
 data:
   MONGO_INITDB_ROOT_USERNAME: "mongodb"
   MONGO_INITDB_ROOT_PASSWORD: "31233123"
-  MONGO_INITDB_DATABASE: "restheart"
+  MONGO_INITDB_DATABASE: "cs"
   CS_DB_SEG_URL: "mongodb://mongodb:31233123@cs-db-seg"
-  CS_DB_SEG_DB: "restheart"
+  CS_DB_SEG_DB: "cs"
 ---
 apiVersion: v1
 kind: Service
